@@ -1,0 +1,7 @@
+.cache
+.vscode
+bin
+build
+first_assignment
+mesh
+smallfvm3.0
