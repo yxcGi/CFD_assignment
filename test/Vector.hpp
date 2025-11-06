@@ -9,6 +9,12 @@
 
 
 
+template <typename T>
+class Vector;
+
+using Point = Vector<double>;
+
+
 // 前置声明
 template<typename T>
 class Tensor;
@@ -100,7 +106,6 @@ public:
     template<typename U>
     friend std::ostream& operator<<(std::ostream& out, const Vector<U>& vec);
 #pragma endregion
-
 
 
 

@@ -34,6 +34,7 @@ private:
     void calculateGeometry();
 
 private:
+    ULL id;
     std::vector<ULL> pointIndexes_;     // 构成面的点的索引
     ULL owner_;                         // 主单元
     ULL neighbor_;                      // 邻接单元

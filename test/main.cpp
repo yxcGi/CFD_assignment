@@ -5,8 +5,8 @@
 int main()
 {
     // 读取网格
-    Mesh mesh("complex_mesh.msh");
-    mesh.printMeshInfo();
+    Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/mesh");
+    
 
     
 
