@@ -37,6 +37,7 @@ public:
 private:
     // 私有处理接口
     void readPoints(const std::string& pointsPath);
+    void readBoundaryConditions(const std::string& boundaryPath);
     void readFaces(
         const std::string& facesPath,
         const std::string& ownerPath,

@@ -10,7 +10,8 @@ class Face
     using Scalar = double;
     using ULL = unsigned long long;
 public:
-    Face(int pointNum = 0);
+    Face() = delete;
+    Face(std::vector<ULL>& pointIndexs, ULL ownerIndex, ULL neighbor = -1);
     Face(const Face& face) = default;
     Face(Face&&) noexcept = default;
     Face& operator=(const Face& rhs);
@@ -29,12 +30,16 @@ public:
     // 获取点的数量
     int getPointNum() const;
 
+    // 输出流重载
+    friend std::ostream& operator<<(std::ostream& out, const Face& face);
+
 private:
     // 计算Face的几何属性
     void calculateGeometry();
 
 private:
     ULL id;
+    int pointNum_;                      // 点的数量
     std::vector<ULL> pointIndexes_;     // 构成面的点的索引
     ULL owner_;                         // 主单元
     ULL neighbor_;                      // 邻接单元
