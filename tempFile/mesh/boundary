@@ -1,0 +1,45 @@
+/*
+由于边界面排在内部面后面，
+内部面一共12个，所以和视频不同的是起始面都+12
+*/
+
+
+FoamFile
+{
+    
+}
+
+
+4
+(
+    LEFT
+    {
+        type            wall;
+        inGroups        List<word> 1(wall);
+        nFaces          3;
+        startFace       22;
+    }
+    TOP
+    {
+        type            wall;
+        inGroups        List<word> 1(wall);
+        nFaces          3;
+        startFace       19;
+    }
+    RIGHT
+    {
+        type            wall;
+        inGroups        List<word> 1(wall);
+        nFaces          3;
+        startFace       16;
+    }
+    BOTTOM
+    {
+        type            wall;
+        inGroups        List<word> 1(wall);
+        nFaces          3;
+        startFace       13;
+    }
+)
+
+// ************************************************************************* //
