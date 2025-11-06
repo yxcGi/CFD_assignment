@@ -176,7 +176,7 @@ void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath,
         
         Face face(pointIndexs, std::stoull(line));
         faces_.emplace_back(std::move(face));
-        
+
 
     }
 

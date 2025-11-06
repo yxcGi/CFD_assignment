@@ -1,0 +1,30 @@
+# 污染物对流-扩散方程求解参数
+# 通用对流-扩散-源项方程: ∂φ/∂t + ∇·(uφ) = ∇·(D∇φ) + S
+
+# 对流速度 (m/s)
+convection_velocity_x 1.0
+convection_velocity_y 0.0
+
+# 扩散系数 (m²/s)
+diffusion_coefficient 0.01
+
+# 源项 (kg/m³/s)
+source_term 0.0
+
+# 时间步长 (s)
+time_step 0.001
+
+# 最终时间 (s)
+final_time 2.0
+
+# 最大迭代次数
+max_iterations 2000
+
+# 收敛容差
+tolerance 1e-6
+
+# 重构方法: "gauss" 或 "least_squares"
+reconstruction_method gauss
+
+# 通量格式: "upwind", "central" 或 "second_order_upwind"
+flux_scheme second_order_upwind
