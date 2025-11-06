@@ -5,3 +5,6 @@ build
 first_assignment
 mesh
 smallfvm3.0
+
+main
+a.out
