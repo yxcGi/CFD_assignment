@@ -31,8 +31,34 @@ void Mesh::readMesh(const std::string& path)
     readFaces(Mesh_faces, Mesh_owner, Mesh_neighbour);
     buildCellsFromFaces();     // 建立网格拓扑关系
     calculateMeshInfo();       // 计算网格信息
+    isValid_ = true;
+
+}
+
+void Mesh::writeMeshToFile(const std::string& path) const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot write to file." << std::endl;
+        throw std::runtime_error("Invalid mesh write error");
+    }
 
 
+    // 写入点信息，调用私有函数
+    writePoints(path + "/points");
+    writeFaces(path + "/faces");
+    writeOwnerAndNeighbour(path + "/owner", path + "/neighbour");
+    writeBoundaryPatch(path + "/boundary");
+}
+
+ULL Mesh::getBoundaryFaceCount() const
+{
+    ULL count = 0;
+    for (const auto& [name, patch] : boundaryPatch_)
+    {
+        count += patch.getNFace();
+    }
+    return count;
 }
 
 void Mesh::readPoints(const std::string& pointsPath)
@@ -128,9 +154,11 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
 
     for (int i = 0; i < boundaryTypeNum; ++i)
     {
+
         // 找{括号，读取上一行的名称name
         while (std::getline(ifsB, line) && line.find("{") == std::string::npos)
         {
+            iss.clear();
             iss.str(line);
             iss >> boundaryName;
         }
@@ -168,7 +196,18 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
         // std::cout << "  Type: " << static_cast<int>(type) << std::endl;
         // std::cout << "  nFaces: " << nFaces << std::endl;
         // std::cout << "  startFace: " << startFace << std::endl;
+        // getchar();
+
     }
+    // 测试用
+    // for (const auto& [name, patch] : boundaryPatch_)
+    // {
+    //     std::cout << "Boundary Patch Name: " << name << std::endl;
+    //     std::cout << "  Type: " << static_cast<int>(patch.getType()) << std::endl;
+    //     std::cout << "  nFaces: " << patch.getNFace() << std::endl;
+    //     std::cout << "  startFace: " << patch.getStartFace() << std::endl;
+    // }
+    // getchar();
 }
 
 void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath, const std::string& neighbourPath)
@@ -194,6 +233,7 @@ void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath,
     while (std::getline(ifsF, line) && line != "}") {}
 
     // 处理owner文件
+    std::cout << "Reading owner file..." << std::endl;
     // 跳过owner文件头, 注释和FoamFile
     while (std::getline(ifsO, line) && line.find("FoamFile") == std::string::npos) {}
     while (std::getline(ifsO, line) && line != "}") {}
@@ -293,7 +333,7 @@ void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath,
     // 将所有内部面的neighbor信息写入faces_
     readNeighbour(neighbourPath, internalFaceIndices);
 
-    
+
     // 测试用
     // for (const auto& face : faces_)
     // {
@@ -343,6 +383,238 @@ void Mesh::readNeighbour(const std::string& neighbourPath, std::vector<ULL> inte
     // {
     //     ele.printFaceInfo();
     // }
+}
+
+void Mesh::writePoints(const std::string& pointsPath) const
+{
+    std::ofstream ofsP(pointsPath);
+    if (!ofsP.is_open())
+    {
+        std::cerr << "Error: Unable to open points file for writing: " << pointsPath << std::endl;
+        throw std::runtime_error("Points file write error");
+    }
+
+    // 写入文件头
+    ofsP << "/*--------------------------------*- C++ -*----------------------------------*\\\n";
+    ofsP << "| =========                 |                                                 |\n";
+    ofsP << "| \\      /  F ield          | OpenFOAM: The Open Source CFD Toolbox           |\n";
+    ofsP << "|  \\    /   O peration      | Version:  v2012                                 |\n";
+    ofsP << "|   \\  /    A nd            | Website:  www.openfoam.com                      |\n";
+    ofsP << "|    \\/     M anipulation   |                                                 |\n";
+    ofsP << "\\*---------------------------------------------------------------------------*/\n";
+    ofsP << "FoamFile\n";
+    ofsP << "{\n";
+    ofsP << "    version     2.0;\n";
+    ofsP << "    format      ascii;\n";
+    ofsP << "    class       vectorField;\n";
+    ofsP << "    location    \"constant/polyMesh\";\n";
+    ofsP << "    object      points;\n";
+    ofsP << "}\n";
+    ofsP << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsP << std::endl;
+    // 写入点数量
+    ofsP << points_.size() << std::endl;
+    ofsP << "(" << std::endl;
+    // 写入点坐标
+    for (const auto& point : points_)
+    {
+        ofsP << " (" << point.x() << " " << point.y() << " " << point.z() << ")" << std::endl;
+    }
+    ofsP << ")" << std::endl;
+    ofsP << std::endl;
+}
+
+void Mesh::writeFaces(const std::string& facesPath) const
+{
+    std::ofstream ofsF(facesPath);
+    if (!ofsF.is_open())
+    {
+        std::cerr << "Error: Unable to open faces file for writing: " << facesPath << std::endl;
+        throw std::runtime_error("Faces file write error");
+    }
+
+    // 写入文件头
+    ofsF << "/*--------------------------------*- C++ -*----------------------------------*\\\n";
+    ofsF << "| =========                 |                                                 |\n";
+    ofsF << "| \\      /  F ield          | OpenFOAM: The Open Source CFD Toolbox           |\n";
+    ofsF << "|  \\    /   O peration      | Version:  v2012                                 |\n";
+    ofsF << "|   \\  /    A nd            | Website:  www.openfoam.com                      |\n";
+    ofsF << "|    \\/     M anipulation   |                                                 |\n";
+    ofsF << "\\*---------------------------------------------------------------------------*/\n";
+    ofsF << "FoamFile\n";
+    ofsF << "{\n";
+    ofsF << "    version     2.0;\n";
+    ofsF << "    format      ascii;\n";
+    ofsF << "    class       faceList;\n";
+    ofsF << "    location    \"constant/polyMesh\";\n";
+    ofsF << "    object      faces;\n";
+    ofsF << "}\n";
+    ofsF << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsF << std::endl;
+    // 写入面数量
+    ofsF << faces_.size() << std::endl;
+    ofsF << "(" << std::endl;
+    // 写入面信息
+    for (const auto& face : faces_)
+    {
+        ofsF << " " << face.getPointNum() << "(";
+        const auto& pointIndices = face.getPointIndexes();
+        for (size_t i = 0; i < pointIndices.size(); ++i)
+        {
+            ofsF << pointIndices[i];
+            if (i != pointIndices.size() - 1)
+            {
+                ofsF << " ";
+            }
+        }
+        ofsF << ")" << std::endl;
+    }
+    ofsF << ")" << std::endl;
+    ofsF << std::endl;
+}
+
+void Mesh::writeOwnerAndNeighbour(const std::string& ownerPath, const std::string& neighbourPath) const
+{
+    std::ofstream ofsO(ownerPath);
+    std::ofstream ofsN(neighbourPath);
+    // 可在循环中同时写入，只需一次循环
+    if (!ofsO.is_open())
+    {
+        std::cerr << "Error: Unable to open owner file for writing: " << ownerPath << std::endl;
+        throw std::runtime_error("Owner file write error");
+    }
+    if (!ofsN.is_open())
+    {
+        std::cerr << "Error: Unable to open neighbour file for writing: " << neighbourPath << std::endl;
+        throw std::runtime_error("Neighbour file write error");
+    }
+    // 写入文件头
+    ofsO << "/*--------------------------------*- C++ -*----------------------------------*\\\n";
+    ofsO << "| =========                 |                                                 |\n";
+    ofsO << "| \\      /  F ield          | OpenFOAM: The Open Source CFD Toolbox           |\n";
+    ofsO << "|  \\    /   O peration      | Version:  v2012                                 |\n";
+    ofsO << "|   \\  /    A nd            | Website:  www.openfoam.com                      |\n";
+    ofsO << "|    \\/     M anipulation   |                                                 |\n";
+    ofsO << "\\*---------------------------------------------------------------------------*/\n";
+    ofsO << "FoamFile\n";
+    ofsO << "{\n";
+    ofsO << "    version     2.0;\n";
+    ofsO << "    format      ascii;\n";
+    ofsO << "    class       labelList;\n";
+    ofsO << "    location    \"constant/polyMesh\";\n";
+    ofsO << "    object      owner;\n";
+    ofsO << "}\n";
+    ofsO << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsO << std::endl;
+    // 写入owner数量
+    ofsO << faces_.size() << std::endl;
+    ofsO << "(" << std::endl;
+    // 写入neighbour文件头
+    ofsN << "/*--------------------------------*- C++ -*----------------------------------*\\\n";
+    ofsN << "| =========                 |                                                 |\n";
+    ofsN << "| \\      /  F ield          | OpenFOAM: The Open Source CFD Toolbox           |\n";
+    ofsN << "|  \\    /   O peration      | Version:  v2012                                 |\n";
+    ofsN << "|   \\  /    A nd            |                                                 |\n";
+    ofsN << "|    \\/     M anipulation   |                                                 |\n";
+    ofsN << "\\*---------------------------------------------------------------------------*/\n";
+    ofsN << "FoamFile\n";
+    ofsN << "{\n";
+    ofsN << "    version     2.0;\n";
+    ofsN << "    format      ascii;\n";
+    ofsN << "    class       labelList;\n";
+    ofsN << "    location    \"constant/polyMesh\";\n";
+    ofsN << "    object      neighbour;\n";
+    ofsN << "}\n";
+    ofsN << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsN << std::endl;
+    // 写入neighbour数量
+    ofsN << faces_.size() - getBoundaryFaceCount() << std::endl;
+    ofsN << "(" << std::endl;
+    // 写入owner和neighbour信息
+    for (const auto& face : faces_)
+    {
+        if (face.getNeighborIndex() != -1)
+        {
+            ofsN << face.getNeighborIndex() << std::endl;
+        }
+        ofsO << face.getOwnerIndex() << std::endl;
+    }
+    ofsO << ")" << std::endl;
+    ofsO << std::endl;
+    ofsN << ")" << std::endl;
+    ofsN << std::endl;
+
+}
+
+void Mesh::writeBoundaryPatch(const std::string& boundaryPath) const
+{
+    std::ofstream ofsB(boundaryPath);
+    if (!ofsB.is_open())
+    {
+        std::cerr << "Error: Unable to open boundary file for writing: " << boundaryPath << std::endl;
+        throw std::runtime_error("Boundary file write error");
+    }
+
+    // 写入文件头
+    ofsB << "/*--------------------------------*- C++ -*----------------------------------*\\\n";
+    ofsB << "| =========                 |                                                 |\n";
+    ofsB << "| \\      /  F ield          | OpenFOAM: The Open Source CFD Toolbox           |\n";
+    ofsB << "|  \\    /   O peration      | Version:  v2012                                 |\n";
+    ofsB << "|   \\  /    A nd            | Website:  www.openfoam.com                      |\n";
+    ofsB << "|    \\/     M anipulation   |                                                 |\n";
+    ofsB << "\\*---------------------------------------------------------------------------*/\n";
+    ofsB << "FoamFile\n";
+    ofsB << "{\n";
+    ofsB << "    version     2.0;\n";
+    ofsB << "    format      ascii;\n";
+    ofsB << "    class       polyBoundaryMesh;\n";
+    ofsB << "    location    \"constant/polyMesh\";\n";
+    ofsB << "    object      boundary;\n";
+    ofsB << "}\n";
+    ofsB<< "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsB << std::endl;
+
+    // 写入边界补丁数量
+    ofsB << boundaryPatch_.size() << std::endl;
+    ofsB << "(" << std::endl;
+    // 写入每个边界补丁的信息
+    for (const auto& [name, patch] : boundaryPatch_)
+    {
+        ofsB << name << std::endl;
+        ofsB << "{" << std::endl;
+        ofsB << "    type            ";
+        switch (patch.getType())
+        {
+        case BoundaryPatch::BoundaryType::PATCH:
+            ofsB << "patch;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::WALL:
+            ofsB << "wall;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::SYMMETRY:
+            ofsB << "symmetry;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::CYCLIC:
+            ofsB << "cyclic;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::WEDGE:
+            ofsB << "wedge;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::EMPTY:
+            ofsB << "empty;" << std::endl;
+            break;
+        case BoundaryPatch::BoundaryType::PROCESSOR:
+            ofsB << "processor;" << std::endl;
+            break;
+        default:
+            throw std::runtime_error("Unknown boundary type during writing.");
+        }
+
+        ofsB << "    nFaces          " << patch.getNFace() << ";" << std::endl;
+        ofsB << "    startFace       " << patch.getStartFace() << ";" << std::endl;
+        ofsB << "}" << std::endl;
+    }
+    ofsB << ")" << std::endl;
 }
 
 void Mesh::buildCellsFromFaces()

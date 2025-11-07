@@ -7,4 +7,5 @@ build
 # smallfvm3.0
 
 main
-a.out
+a.out*
+outputPolyMesh
