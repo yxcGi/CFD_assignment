@@ -9,7 +9,8 @@ class Cell
     using ULL = unsigned long long;
     using Scalar = double;
 public:
-    Cell(int faceNum = 0);
+
+    Cell();
     Cell(const Cell&) = default;
     Cell(Cell&&) noexcept = default;
     Cell& operator=(const Cell& rhs);
@@ -26,9 +27,29 @@ public:
     const Vector<Scalar>& getCenter() const;
     // 获取面的数量
     int getFaceNum() const;
+    // 添加face索引
+    void addFaceIndex(ULL faceIndex);
+    void calculateCellInfo();
+
+
+    // 打印测试用
+    void printCellInfo() const
+    {
+        std::cout << "Cell Info:" << std::endl;
+        std::cout << "  Face Num: " << faceIndexes_.size() << std::endl;
+        std::cout << "  Face Indices: ";
+        for (const auto& idx : faceIndexes_)
+        {
+            std::cout << idx << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "  Volume: " << volume_ << std::endl;
+        std::cout << "  Center: " << center_ << std::endl;
+    }
+
+    
 private:
     // 计算Cell的几何属性
-    void calculateGeometry();
 
 private:
     ULL id;                             // 单元ID

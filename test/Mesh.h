@@ -10,9 +10,11 @@
 #include "Face.h"
 #include "Cell.h"
 #include "BoundaryPatch.h"
+#include <unordered_set>
 
 class Mesh
 {
+    using ULL = unsigned long long;
     using Scalar = double;
 public:
     Mesh();
@@ -34,24 +36,33 @@ public:
     const std::vector<Face>& getFaces() const;
     const std::vector<Cell>& getCells() const;
 
+
+
 private:
     // 私有处理接口
     void readPoints(const std::string& pointsPath);
-    void readBoundaryConditions(const std::string& boundaryPath);
+    void readBoundaryPatch(const std::string& boundaryPath);
     void readFaces(
         const std::string& facesPath,
         const std::string& ownerPath,
         const std::string& neighbourPath
     );
+    void readNeighbour(const std::string& neighbourPath, std::vector<ULL> internalFaceIndices);
+    void buildCellsFromFaces();
+    BoundaryPatch::BoundaryType stringToType(const std::string& name) const;
+    void calculateMeshInfo();
 
 
 private:
     std::vector<Vector<Scalar>> points_;                                    // 点列表
     std::vector<Face> faces_;                                               // 面列表
     std::vector<Cell> cells_;                                               // 单元列表
-    std::unordered_map<std::string, BoundaryPatch> boundaryConditions_;     // 边界条件映射
+    std::unordered_set<ULL> internalCellIndexes_;                                 // 内部单元索引列表
+    std::unordered_set<ULL> boundaryCellIndexes_;                                 // 边界面索引列表
+    std::unordered_map<std::string, BoundaryPatch> boundaryPatch_;     // 边界条件映射
     bool isValid_;                                                          // 网格是否有效
     std::string meshPath_;                                                  // 网格路径
+
 };
 
 
