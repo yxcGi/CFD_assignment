@@ -2,19 +2,23 @@
 #define BOUNDARYPATCH_H_
 
 #include <string>
+#include <iostream>
 
 class BoundaryPatch
 {
+    using Scalar = double;
     using ULL = unsigned long long;
 public:
     enum class BoundaryType
     {
-        DIRICHLET,  // 指定值边界
-        NEUMANN,    // 指定通量边界
+        PATCH,      // 净出口
         WALL,       // 无滑移壁面
-        SYMMETRY,   // 对称边界
-        PERIODIC,   // 周期边界
-        CUSTOM      // 自定义边界
+        SYMMETRY,   // 对称面
+        CYCLIC,     // 周期性边界
+        WEDGE,      // 楔形边界
+        EMPTY,      // 空边界
+        PROCESSOR,  // 处理器边界，并行
+        CUSTOM      // 自定义边界类型，未设置
     };
     
 public:
@@ -26,18 +30,21 @@ public:
         BoundaryType type = BoundaryType::CUSTOM
     );
     BoundaryPatch(const BoundaryPatch&) = delete;
-    BoundaryPatch(BoundaryPatch&&) = delete;
+    BoundaryPatch(BoundaryPatch&&) = default;
     BoundaryPatch& operator=(const BoundaryPatch&) = delete;
-    BoundaryPatch& operator=(BoundaryPatch&&) = delete;
+    BoundaryPatch& operator=(BoundaryPatch&&) = default;
 
     ~BoundaryPatch() = default;
 
 public:
     // 常用接口
     std::string getName() const;
-    BoundaryPatch getType() const;
+    BoundaryType getType() const;
     ULL getNFace() const;
     ULL getStartFace() const;
+    void setBoundaryType(BoundaryType type);
+
+
 
 
 private:

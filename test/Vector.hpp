@@ -57,7 +57,7 @@ public:
     // 标量乘法
     Vector<Scalar> operator*(const Scalar rhs) const;                          // Vector * Scalar 右乘
     template<typename U>
-    friend Vector<Scalar> operator*(const Scalar lhs, const Vector<U>& rhs);   // Scalar * Vector 左乘
+    friend Vector<typename Vector<U>::Scalar> operator*(const typename Vector<U>::Scalar lhs, const Vector<U>& rhs);   // Scalar * Vector 左乘
     Vector<Scalar> operator/(const Scalar rhs) const;                          // Vector / Scalar
 
     // 复合复制运算
@@ -150,6 +150,7 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T>& src)
     x_ = src.x_;
     y_ = src.y_;
     z_ = src.z_;
+    return *this;
 }
 
 
