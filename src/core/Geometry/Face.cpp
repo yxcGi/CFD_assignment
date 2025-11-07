@@ -27,6 +27,16 @@ std::ostream& operator<<(std::ostream& out, const Face& face)
     return out;
 }
 
+const std::vector<ULL>& Face::getPointIndexes() const
+{
+    return pointIndexes_;
+}
+
+int Face::getPointNum() const
+{
+    return pointNum_;
+}
+
 ULL Face::getOwnerIndex() const
 {
     return owner_;
@@ -117,7 +127,8 @@ void Face::calculateFaceInfo(const std::vector<Vector<Scalar>>& points)
         normal_ = weightedNormalVector.unitVector();
     }
 
-    printFaceInfo();
+    // 测试
+    // printFaceInfo();
 }
 
 Scalar Face::calculateArea(const std::vector<Vector<Scalar>>& points) const

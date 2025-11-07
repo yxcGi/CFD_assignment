@@ -30,11 +30,14 @@ public:
     void readMesh(const std::string& path);
     void writeMesh(const std::string& path);
     void printMeshInfo() const;
+    void writeMeshToFile(const std::string& path) const;
 
     // 获取器
     const std::vector<Vector<Scalar>>& getPoints() const;
     const std::vector<Face>& getFaces() const;
     const std::vector<Cell>& getCells() const;
+
+    ULL getBoundaryFaceCount() const;
 
 
 
@@ -48,9 +51,17 @@ private:
         const std::string& neighbourPath
     );
     void readNeighbour(const std::string& neighbourPath, std::vector<ULL> internalFaceIndices);
+    
+    void writePoints(const std::string& pointsPath) const;
+    void writeFaces(const std::string& facesPath) const;
+    void writeOwnerAndNeighbour(const std::string& ownerPath, const std::string& neighbourPath) const;
+    void writeBoundaryPatch(const std::string& boundaryPath) const;
+
     void buildCellsFromFaces();
     BoundaryPatch::BoundaryType stringToType(const std::string& name) const;
     void calculateMeshInfo();
+
+
 
 
 private:

@@ -23,7 +23,7 @@ public:
 
 public:
     // 获取面的点索引列表
-    const std::vector<ULL>& getPointIndices() const;
+    const std::vector<ULL>& getPointIndexes() const;
     // 获取面的法向量
     const Vector<Scalar>& getNormal() const;
     // 获取面积
