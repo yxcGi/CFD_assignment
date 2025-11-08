@@ -8,6 +8,7 @@
 #include <stdexcept>
 
 
+using Scalar = double;
 
 template <typename T>
 class Vector;
@@ -18,6 +19,7 @@ using Point = Vector<double>;
 // 前置声明
 template<typename T>
 class Tensor;
+
 
 /**
  * @brief 向量/点的定义，模板类
@@ -76,9 +78,7 @@ public:
     template<typename U>
     Vector<Scalar> operator*(const Tensor<U>& rhs) const;   // Vector * Tensor
 
-    // 并矢
-    template<typename U>
-    Tensor<Scalar> operator*(const Vector<U>& rhs) const;        // Vector * Vector  并矢
+    // 并矢：房子啊Tensor里为，自由函数
 #pragma endregion
 
 #pragma region 常用接口
@@ -98,16 +98,17 @@ public:
     const T& y() const { return y_; }
     const T& z() const { return z_; }
 
-    // 判断标量（除数）是否为0
-    static bool isZero(Scalar value, Scalar epsilon = EPSILON); // 是否为0向量
-    bool isZeroVector(Scalar epsilon = EPSILON) const;
+    // 判断是否为0向量
+    bool isZeroVector(const Scalar epsilon = EPSILON) const;
 
     // 输出流
     template<typename U>
     friend std::ostream& operator<<(std::ostream& out, const Vector<U>& vec);
 #pragma endregion
 
-
+private:
+    // 判断标量（除数）是否为0
+    static bool isZero(const Scalar value, const Scalar epsilon = EPSILON); // 是否为0向量
 
 
 
@@ -115,6 +116,10 @@ public:
 private:
     T x_, y_, z_;   // 坐标
 };
+
+
+
+
 
 
 
@@ -167,6 +172,17 @@ template<typename U>
 inline Vector<typename Vector<T>::Scalar> Vector<T>::operator-(const Vector<U>& rhs) const
 {
     return Vector<Scalar>(x_ - rhs.x_, y_ - rhs.y_, z_ - rhs.z_);
+}
+
+template<typename T>
+template<typename U>
+inline Vector<typename Vector<T>::Scalar> Vector<T>::operator*(const Tensor<U>& rhs) const
+{
+    return Vector<Scalar>(
+        x_ * rhs.xx() + y_ * rhs.yx() + z_ * rhs.zx(),
+        x_ * rhs.xy() + y_ * rhs.yy() + z_ * rhs.zy(),
+        x_ * rhs.xz() + y_ * rhs.yz() + z_ * rhs.zz()
+    );
 }
 
 
@@ -311,4 +327,7 @@ inline bool Vector<T>::isZeroVector(Scalar epsilon) const
 {
     return isZero(x_, epsilon) && isZero(y_, epsilon) && isZero(z_, epsilon);
 }
+
+
+
 #endif // VECTOR_H_
