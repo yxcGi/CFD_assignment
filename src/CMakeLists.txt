@@ -4,7 +4,7 @@ add_subdirectory(core)
 # 生成可执行文件
 add_executable(${PRJ_NAME} main.cpp)
 
-# 连接动态库
+# 链接动态库
 target_link_libraries(${PRJ_NAME} PRIVATE core)
 
 # 添加头文件目录
