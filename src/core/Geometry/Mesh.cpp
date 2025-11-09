@@ -1,10 +1,13 @@
 #include "Mesh.h"
 #include <sstream>
+#include "BaseField.hpp"
 #include "Face.h"
 #include <sstream>
 #include <map>
 #include <cassert>
 #include <thread>
+#include "Field.hpp"
+
 
 
 using ULL = unsigned long long;
@@ -51,14 +54,140 @@ void Mesh::writeMeshToFile(const std::string& path) const
     writeBoundaryPatch(path + "/boundary");
 }
 
-ULL Mesh::getBoundaryFaceCount() const
+const std::vector<Vector<Scalar>>& Mesh::getPoints() const
 {
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return points." << std::endl;
+        throw std::runtime_error("Invalid mesh points error");
+    }
+    return points_;
+}
+
+const std::vector<Face>& Mesh::getFaces() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return faces." << std::endl;
+        throw std::runtime_error("Invalid mesh faces error");
+    }
+    return faces_;
+}
+
+const std::vector<ULL>& Mesh::getInternalFaceIndexes() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return internal face indices." << std::endl;
+        throw std::runtime_error("Invalid mesh internal face indices error");
+    }
+    return internalFaceIndexes_;
+}
+
+const std::vector<ULL>& Mesh::getBoundaryFaceIndexes() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return boundary face indices." << std::endl;
+        throw std::runtime_error("Invalid mesh boundary face indices error");
+    }
+    return boundaryFaceIndexes_;
+}
+
+const std::vector<Cell>& Mesh::getCells() const
+{
+    if (isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return cells." << std::endl;
+        throw std::runtime_error("Invalid mesh cells error");
+    }
+    return cells_;
+}
+
+ULL Mesh::getCellNumber() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return cell number." << std::endl;
+        throw std::runtime_error("Invalid mesh cell number error");
+    }
+    return static_cast<ULL>(cells_.size());
+}
+
+ULL Mesh::getFaceNumber() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return face number." << std::endl;
+        throw std::runtime_error("Invalid mesh face number error");
+    }
+    return static_cast<ULL>(faces_.size());
+}
+
+ULL Mesh::getPointNumber() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return point number." << std::endl;
+        throw std::runtime_error("Invalid mesh point number error");
+    }
+    return static_cast<ULL>(points_.size());
+}
+
+ULL Mesh::getInternalCellNumber() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return internal cell number." << std::endl;
+        throw std::runtime_error("Invalid mesh internal cell number error");
+    }
+    return static_cast<ULL>(internalFaceIndexes_.size());
+}
+
+ULL Mesh::getBoundaryFaceNumber() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return boundary face count." << std::endl;
+        throw std::runtime_error("Invalid mesh boundary face count error");
+    }
     ULL count = 0;
     for (const auto& [name, patch] : boundaryPatch_)
     {
         count += patch.getNFace();
     }
     return count;
+}
+
+ULL Mesh::getNumber(field::FieldType type) const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return number." << std::endl;
+        throw std::runtime_error("Invalid mesh number error");
+    }
+
+    if (type == field::FieldType::CELL_FIELD)
+        
+    {
+        return getCellNumber();
+    }
+    else if (type == field::FieldType::FACE_FIELD)
+    {
+        return getFaceNumber();
+    }
+    else if (type == field::FieldType::NODE_FIELD)
+    {
+        return getPointNumber();
+    }
+    else if (type == field::FieldType::BASE)
+    {
+        std::cerr << "Field type not supported." << std::endl;
+        std::cerr << "The type is " << static_cast<int>(type) << std::endl;
+        throw std::runtime_error("Field type not supported"); 
+    }
+    std::cerr << "Unknown field type." << std::endl;
+    throw std::runtime_error("Unknown field type");
 }
 
 void Mesh::readPoints(const std::string& pointsPath)
@@ -528,7 +657,7 @@ void Mesh::writeOwnerAndNeighbour(const std::string& ownerPath, const std::strin
     ofsN << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
     ofsN << std::endl;
     // 写入neighbour数量
-    ofsN << faces_.size() - getBoundaryFaceCount() << std::endl;
+    ofsN << faces_.size() - getBoundaryFaceNumber() << std::endl;
     ofsN << "(" << std::endl;
     // 写入owner和neighbour信息
     for (const auto& face : faces_)
@@ -571,7 +700,7 @@ void Mesh::writeBoundaryPatch(const std::string& boundaryPath) const
     ofsB << "    location    \"constant/polyMesh\";\n";
     ofsB << "    object      boundary;\n";
     ofsB << "}\n";
-    ofsB<< "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
+    ofsB << "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
     ofsB << std::endl;
 
     // 写入边界补丁数量
@@ -642,11 +771,13 @@ void Mesh::buildCellsFromFaces()
 
         if (neighborIndex == -1)    // 说明是边界面
         {
+            internalFaceIndexes_.emplace_back(i);
             cells_[ownerIndex].addFaceIndex(i);
             boundaryCellIndexes_.emplace(ownerIndex);
         }
         else                        // 内部面
         {
+            boundaryFaceIndexes_.emplace_back(i);
             cells_[ownerIndex].addFaceIndex(i);
             cells_[neighborIndex].addFaceIndex(i);
             internalCellIndexes_.emplace(ownerIndex);

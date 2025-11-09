@@ -2,9 +2,12 @@
 #include "Math/Vector.hpp"
 #include "Geometry/Mesh.h"
 #include "Math/Tensor.hpp"
+#include "Fields/CellField.hpp"
 
 int main()
 {
+
+    
     using Scalar = double;
     // 读取网格
     // Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");

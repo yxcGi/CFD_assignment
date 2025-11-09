@@ -11,6 +11,13 @@
 #include "Cell.h"
 #include "BoundaryPatch.h"
 #include <unordered_set>
+// #include "BaseField.hpp"
+#include "FieldType.hpp"
+
+// using field::FieldType;
+
+
+
 
 class Mesh
 {
@@ -35,9 +42,20 @@ public:
     // 获取器
     const std::vector<Vector<Scalar>>& getPoints() const;
     const std::vector<Face>& getFaces() const;
+    const std::vector<ULL>& getInternalFaceIndexes() const;
+    const std::vector<ULL>& getBoundaryFaceIndexes() const;
     const std::vector<Cell>& getCells() const;
+    ULL getCellNumber() const;
+    ULL getFaceNumber() const;
+    ULL getPointNumber() const;
 
-    ULL getBoundaryFaceCount() const;
+    ULL getInternalCellNumber() const;
+    ULL getBoundaryFaceNumber() const;
+
+    // 用于获取不同类型场的数量的统一接口
+    ULL getNumber(field::FieldType type) const;
+
+
 
 
 
@@ -67,6 +85,8 @@ private:
 private:
     std::vector<Vector<Scalar>> points_;                                    // 点列表
     std::vector<Face> faces_;                                               // 面列表
+    std::vector<ULL> internalFaceIndexes_;                                 // 内部面索引列表
+    std::vector<ULL> boundaryFaceIndexes_;                                 // 边界面索引列表
     std::vector<Cell> cells_;                                               // 单元列表
     std::unordered_set<ULL> internalCellIndexes_;                                 // 内部单元索引列表
     std::unordered_set<ULL> boundaryCellIndexes_;                                 // 边界面索引列表
