@@ -22,7 +22,7 @@ public:
     FaceField<T> cellToFace(interpolation::Scheme scheme = interpolation::Scheme::LINEAR) const;
 
 private:
-    Interpolation<T> interpolator_;
+    Interpolation<T> interpolator_;     // 插值函数对象
 };
 
 #pragma 函数实现
