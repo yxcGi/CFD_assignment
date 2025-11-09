@@ -1,10 +1,10 @@
-#pragma once
+#ifndef TENSOR_H_
+#define TENSOR_H_
+
 
 #include <iostream>
 #include "Vector.hpp"
 #include <cmath>
-
-
 
 
 template <typename T>
@@ -257,3 +257,7 @@ inline std::ostream& operator<<(std::ostream& out, const Tensor<U>& tensor)
         << "[ " << tensor.zx_ << " , " << tensor.zy_ << " , " << tensor.zz_ << " ]";
     return out;
 }
+
+
+
+#endif // TENSOR_H_

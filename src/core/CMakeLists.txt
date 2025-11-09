@@ -11,6 +11,8 @@ file(GLOB_RECURSE CORE_HEADERS
     Geometry/*.hpp
     Math/*.h
     Math/*.hpp
+    Fields/*.h
+    Fields/*.hpp
 )
 
 # 添加动态库
@@ -22,4 +24,5 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/Geometry
     ${CMAKE_CURRENT_SOURCE_DIR}/Math
+    ${CMAKE_CURRENT_SOURCE_DIR}/Fields
 )
