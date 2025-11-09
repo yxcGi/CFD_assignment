@@ -24,7 +24,7 @@ public:
     BaseField(const BaseField<T>& src) = delete;
     BaseField(BaseField<T>&& src) noexcept = default;
     BaseField<T>& operator=(const BaseField<T>& src) = delete;
-    BaseField<T>& operator=(BaseField<T>&& src) = default;
+    BaseField<T>& operator=(BaseField<T>&& src) noexcept = default;
     ~BaseField() = default;
 
 public:
@@ -40,7 +40,10 @@ public:
     // 对特定场点赋值
     void setValue(ULL id, const T& value);
     // 采用函数对象，lambda表达式赋值(传入的是坐标值)
-    void setValue(std::function<T(Scalar, Scalar, Scalar)> func);
+    void setValue(const std::function<T(Scalar, Scalar, Scalar)>& func);
+
+    // 场是否有效
+    bool isValid() const { return isValid_; }
 
 
 
@@ -58,6 +61,10 @@ protected:
     field::FieldType type_;            // 场类型
     bool isValid_;              // 场是否有效
 };
+
+#pragma region 函数实现
+
+
 
 template<typename T>
 inline BaseField<T>::BaseField(const std::string& name, Mesh* mesh)
@@ -115,7 +122,7 @@ inline void BaseField<T>::setValue(ULL id, const T& value)
 }
 
 template<typename T>
-inline void BaseField<T>::setValue(std::function<T(Scalar, Scalar, Scalar)> func)
+inline void BaseField<T>::setValue(const std::function<T(Scalar, Scalar, Scalar)>& func)
 {
     if (!isValid_)
     {
