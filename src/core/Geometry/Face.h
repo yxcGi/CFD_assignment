@@ -38,8 +38,8 @@ public:
     LL getNeighborIndex() const;
     // 设置邻单元
     void setNeighbor(ULL neighborIndex);
-    
-    // 计算面信息，构造时调用
+
+    // 计算面信息，读网格时调用
     void calculateFaceInfo(const std::vector<Vector<Scalar>>& points);
 
     // 输出流重载

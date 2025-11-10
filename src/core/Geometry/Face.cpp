@@ -37,6 +37,11 @@ const Vector<Scalar>& Face::getNormal() const
     return normal_;
 }
 
+Scalar Face::getArea() const
+{
+    return area_;
+}
+
 const Vector<Scalar>& Face::getCenter() const
 {
     return center_;
@@ -56,7 +61,7 @@ LL Face::getNeighborIndex() const
 {
     return neighbor_;
 }
-    
+
 void Face::setNeighbor(ULL neighborIndex)
 {
     neighbor_ = neighborIndex;

@@ -4,6 +4,10 @@
 
 #include <vector>
 #include "Vector.hpp"
+#include <Face.h>
+
+
+
 class Cell
 {
     using ULL = unsigned long long;
@@ -29,7 +33,12 @@ public:
     int getFaceNum() const;
     // 添加face索引
     void addFaceIndex(ULL faceIndex);
-    void calculateCellInfo();
+
+    // 计算单元的几何属性
+    void calculateCellInfo(
+        const std::vector<Face>& faces,     // mesh里的面列表
+        const std::vector<Point>& points    // mesh里的点列表
+    );
 
 
     // 打印测试用
@@ -47,7 +56,7 @@ public:
         std::cout << "  Center: " << center_ << std::endl;
     }
 
-    
+
 private:
     // 计算Cell的几何属性
 

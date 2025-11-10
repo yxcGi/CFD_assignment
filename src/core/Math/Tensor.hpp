@@ -232,7 +232,7 @@ inline bool Tensor<Tp>::isZeroTensor(const Scalar epsilon) const
 template<typename Tp>
 inline bool Tensor<Tp>::isZero(const Scalar value, const Scalar epsilon)
 {
-    return (std::fabs(value) < epsilon);
+    return (std::abs(value) < epsilon);
 }
 
 
