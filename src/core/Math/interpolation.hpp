@@ -22,20 +22,20 @@ namespace interpolation
  * @brief 插值类函数对象，用于两点间的差值
  * @tparam T 数据类型
  */
-template <typename T>
+template <typename Tp>
 class Interpolation
 {
     using Scalar = double;
 public:
     // 传两个值就是算数平均
-    T operator()(const T& phi1, const T& phi2);
-    T operator()(const T& phi1, const T& phi2, interpolation::Scheme scheme = interpolation::Scheme::LINEAR, Scalar alpha = 0.5);
+    // T operator()(const T& phi1, const T& phi2);
+    Tp operator()(const Tp& phi1, const Tp& phi2, interpolation::Scheme scheme = interpolation::Scheme::LINEAR, Scalar alpha = 0.5) const;
 };
 
 
 
-template<typename T>
-inline T Interpolation<T>::operator()(const T& phi1, const T& phi2, interpolation::Scheme scheme, Scalar alpha)
+template<typename Tp>
+inline Tp Interpolation<Tp>::operator()(const Tp& phi1, const Tp& phi2, interpolation::Scheme scheme, Scalar alpha) const
 {
     // phi1 * (1 - alpha) + phi2 * alpha
     if (scheme == interpolation::Scheme::LINEAR)

@@ -1,12 +1,13 @@
 #include "Mesh.h"
+#include <fstream>
 #include <sstream>
-#include "BaseField.hpp"
+// #include "BaseField.hpp"
 #include "Face.h"
 #include <sstream>
 #include <map>
 #include <cassert>
-#include <thread>
-#include "Field.hpp"
+// #include <thread>
+// #include "Field.hpp"
 
 
 
@@ -96,7 +97,7 @@ const std::vector<ULL>& Mesh::getBoundaryFaceIndexes() const
 
 const std::vector<Cell>& Mesh::getCells() const
 {
-    if (isValid_)
+    if (!isValid_)
     {
         std::cerr << "Error: Mesh is invalid, cannot return cells." << std::endl;
         throw std::runtime_error("Invalid mesh cells error");
@@ -152,11 +153,21 @@ ULL Mesh::getBoundaryFaceNumber() const
         throw std::runtime_error("Invalid mesh boundary face count error");
     }
     ULL count = 0;
-    for (const auto& [name, patch] : boundaryPatch_)
+    for (const auto& [name, patch] : boundaryPatches_)
     {
         count += patch.getNFace();
     }
     return count;
+}
+
+const std::unordered_map<std::string, BoundaryPatch>& Mesh::getBoundaryPatches() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return boundary patches." << std::endl;
+        throw std::runtime_error("Invalid mesh boundary patches error");
+    }
+    return boundaryPatches_;
 }
 
 ULL Mesh::getNumber(field::FieldType type) const
@@ -317,7 +328,7 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
 
         // 添加至boundaryPatch_ map中
         BoundaryPatch patch(boundaryName, nFaces, startFace, type);
-        boundaryPatch_.emplace(boundaryName, std::move(patch));
+        boundaryPatches_.emplace(boundaryName, std::move(patch));
 
         /* 测试用 */
         // std::cout << "Boundary Patch " << i + 1 << ": " << std::endl;
@@ -423,7 +434,7 @@ void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath,
     // 开始处理neighbour文件
     std::map<ULL, ULL> boundaryIndxRange;   // 边界面的起始和终止索引
     // 获取边界面的区间范围
-    for (const auto& ele : boundaryPatch_)
+    for (const auto& ele : boundaryPatches_)
     {
         boundaryIndxRange[ele.second.getStartFace()] = ele.second.getNFace() + ele.second.getStartFace();
     }
@@ -704,10 +715,10 @@ void Mesh::writeBoundaryPatch(const std::string& boundaryPath) const
     ofsB << std::endl;
 
     // 写入边界补丁数量
-    ofsB << boundaryPatch_.size() << std::endl;
+    ofsB << boundaryPatches_.size() << std::endl;
     ofsB << "(" << std::endl;
     // 写入每个边界补丁的信息
-    for (const auto& [name, patch] : boundaryPatch_)
+    for (const auto& [name, patch] : boundaryPatches_)
     {
         ofsB << name << std::endl;
         ofsB << "{" << std::endl;

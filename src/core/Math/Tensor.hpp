@@ -7,7 +7,7 @@
 #include <cmath>
 
 
-template <typename T>
+template <typename Tp>
 class Tensor
 {
     using Scalar = double;
@@ -15,40 +15,40 @@ class Tensor
 public:
     Tensor();
     Tensor(     // 3D
-        T xx, T xy, T xz,
-        T yx, T yy, T yz,
-        T zx, T zy, T zz
+        Tp xx, Tp xy, Tp xz,
+        Tp yx, Tp yy, Tp yz,
+        Tp zx, Tp zy, Tp zz
     );
     Tensor(     // 2D
-        T xx, T xy,
-        T yx, T yy
+        Tp xx, Tp xy,
+        Tp yx, Tp yy
     );
-    explicit Tensor(T diag);                    // 对角初始化
-    Tensor(const Tensor<T>& src) = default;
-    Tensor(Tensor<T>&&) noexcept = default;
-    Tensor<T>& operator=(const Tensor<T>& src) = default;
-    Tensor<T>& operator=(Tensor<T>&&) noexcept = default;
+    explicit Tensor(Tp diag);                    // 对角初始化
+    Tensor(const Tensor<Tp>& src) = default;
+    Tensor(Tensor<Tp>&&) noexcept = default;
+    Tensor<Tp>& operator=(const Tensor<Tp>& src) = default;
+    Tensor<Tp>& operator=(Tensor<Tp>&&) noexcept = default;
 
     ~Tensor() = default;
 public:
     /* ----------基本运算----------- */
     // 张量与张量
-    Tensor<T> operator+(const Tensor<T>& rhs) const;    // Tensor + Tensor
-    Tensor<T> operator-(const Tensor<T>& rhs) const;    // Tensor - Tensor
-    Tensor<T> operator*(const Tensor<T>& rhs) const;    // Tensor * Tensor 相乘
-    Tensor<T> operator-() const;                        // 取反
+    Tensor<Tp> operator+(const Tensor<Tp>& rhs) const;    // Tensor + Tensor
+    Tensor<Tp> operator-(const Tensor<Tp>& rhs) const;    // Tensor - Tensor
+    Tensor<Tp> operator*(const Tensor<Tp>& rhs) const;    // Tensor * Tensor 相乘
+    Tensor<Tp> operator-() const;                        // 取反
 
-    T operator&&(const Tensor<T>& rhs) const;           // 双点积 T :: T
+    Tp operator&&(const Tensor<Tp>& rhs) const;           // 双点积 T :: T
 
     // 张量与矢量
     template<typename U>
     Vector<Scalar> operator*(const Vector<U>& rhs) const;   // Tensor * Vector
 
     // += -= /= *=
-    Tensor<T>& operator+=(const Tensor<T>& rhs);        // Tensor += Tensor
-    Tensor<T>& operator-=(const Tensor<T>& rhs);        // Tensor -= Tensor
-    Tensor<T>& operator*=(const Scalar rhs);            // Tensor *= Scalar
-    Tensor<T>& operator/=(const Scalar rhs);            // Tensor /= Scalar
+    Tensor<Tp>& operator+=(const Tensor<Tp>& rhs);        // Tensor += Tensor
+    Tensor<Tp>& operator-=(const Tensor<Tp>& rhs);        // Tensor -= Tensor
+    Tensor<Tp>& operator*=(const Scalar rhs);            // Tensor *= Scalar
+    Tensor<Tp>& operator/=(const Scalar rhs);            // Tensor /= Scalar
 
 
     // 输出流重载
@@ -67,9 +67,9 @@ private:
 
 
 private:
-    T xx_, xy_, xz_;
-    T yx_, yy_, yz_;
-    T zx_, zy_, zz_;
+    Tp xx_, xy_, xz_;
+    Tp yx_, yy_, yz_;
+    Tp zx_, zy_, zz_;
 };
 
 
@@ -78,58 +78,58 @@ private:
 
 #pragma region 函数实现
 
-template<typename T>
-inline Tensor<T>::Tensor()
+template<typename Tp>
+inline Tensor<Tp>::Tensor()
     : xx_(0), xy_(0), xz_(0)
     , yx_(0), yy_(0), yz_(0)
     , zx_(0), zy_(0), zz_(0)
 {}
 
-template<typename T>
-inline Tensor<T>::Tensor(T xx, T xy, T xz, T yx, T yy, T yz, T zx, T zy, T zz)
+template<typename Tp>
+inline Tensor<Tp>::Tensor(Tp xx, Tp xy, Tp xz, Tp yx, Tp yy, Tp yz, Tp zx, Tp zy, Tp zz)
     : xx_(xx), xy_(xy), xz_(xz)
     , yx_(yx), yy_(yy), yz_(yz)
     , zx_(zx), zy_(zy), zz_(zz)
 {}
 
-template<typename T>
-inline Tensor<T>::Tensor(T xx, T xy, T yx, T yy)
+template<typename Tp>
+inline Tensor<Tp>::Tensor(Tp xx, Tp xy, Tp yx, Tp yy)
     : xx_(xx), xy_(xy), xz_(0)
     , yx_(yx), yy_(yy), yz_(0)
     , zx_(0), zy_(0), zz_(0)
 {}
 
-template<typename T>
-inline Tensor<T>::Tensor(T diag)
+template<typename Tp>
+inline Tensor<Tp>::Tensor(Tp diag)
     : xx_(diag), xy_(0), xz_(0)
     , yx_(0), yy_(diag), yz_(0)
     , zx_(0), zy_(0), zz_(diag)
 {}
 
-template<typename T>
-inline Tensor<T> Tensor<T>::operator+(const Tensor<T>& rhs) const
+template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator+(const Tensor<Tp>& rhs) const
 {
-    return Tensor<T>(
+    return Tensor<Tp>(
         xx_ + rhs.xx_, xy_ + rhs.xy_, xz_ + rhs.xz_,
         yx_ + rhs.yx_, yy_ + rhs.yy_, yz_ + rhs.yz_,
         zx_ + rhs.zx_, zy_ + rhs.zy_, zz_ + rhs.zz_
     );
 }
 
-template<typename T>
-inline Tensor<T> Tensor<T>::operator-(const Tensor<T>& rhs) const
+template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator-(const Tensor<Tp>& rhs) const
 {
-    return Tensor<T>(
+    return Tensor<Tp>(
         xx_ - rhs.xx_, xy_ - rhs.xy_, xz_ - rhs.xz_,
         yx_ - rhs.yx_, yy_ - rhs.yy_, yz_ - rhs.yz_,
         zx_ - rhs.zx_, zy_ - rhs.zy_, zz_ - rhs.zz_
     );
 }
 
-template<typename T>
-inline Tensor<T> Tensor<T>::operator*(const Tensor<T>& rhs) const
+template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator*(const Tensor<Tp>& rhs) const
 {
-    return Tensor<T>(
+    return Tensor<Tp>(
         xx_ * rhs.xx_ + xy_ * rhs.yx_ + xz_ * rhs.zx_,
         xx_ * rhs.xy_ + xy_ * rhs.yy_ + xz_ * rhs.zy_,
         xx_ * rhs.xz_ + xy_ * rhs.yz_ + xz_ * rhs.zz_,
@@ -144,18 +144,18 @@ inline Tensor<T> Tensor<T>::operator*(const Tensor<T>& rhs) const
     );
 }
 
-template<typename T>
-inline Tensor<T> Tensor<T>::operator-() const
+template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator-() const
 {
-    return Tensor<T>(
+    return Tensor<Tp>(
         -xx_, -xy_, -xz_,
         -yx_, -yy_, -yz_,
         -zx_, -zy_, -zz_
     );
 }
 
-template<typename T>
-inline T Tensor<T>::operator&&(const Tensor<T>& rhs) const
+template<typename Tp>
+inline Tp Tensor<Tp>::operator&&(const Tensor<Tp>& rhs) const
 {
     return (
         xx_ * rhs.xx_ + xy_ * rhs.yx_ + xz_ * rhs.zx_ +
@@ -164,9 +164,9 @@ inline T Tensor<T>::operator&&(const Tensor<T>& rhs) const
         );
 }
 
-template<typename T>
+template<typename Tp>
 template<typename U>
-inline Vector<typename Tensor<T>::Scalar> Tensor<T>::operator*(const Vector<U>& rhs) const
+inline Vector<typename Tensor<Tp>::Scalar> Tensor<Tp>::operator*(const Vector<U>& rhs) const
 {
     return Vector<Scalar>(
         xx_ * rhs.x() + xy_ * rhs.y() + xz_ * rhs.z(),
@@ -175,8 +175,8 @@ inline Vector<typename Tensor<T>::Scalar> Tensor<T>::operator*(const Vector<U>& 
     );
 }
 
-template<typename T>
-inline Tensor<T>& Tensor<T>::operator+=(const Tensor<T>& rhs)
+template<typename Tp>
+inline Tensor<Tp>& Tensor<Tp>::operator+=(const Tensor<Tp>& rhs)
 {
     xx_ += rhs.xx_; xy_ += rhs.xy_; xz_ += rhs.xz_;
     yx_ += rhs.yx_; yy_ += rhs.yy_; yz_ += rhs.yz_;
@@ -184,8 +184,8 @@ inline Tensor<T>& Tensor<T>::operator+=(const Tensor<T>& rhs)
     return *this;
 }
 
-template<typename T>
-inline Tensor<T>& Tensor<T>::operator-=(const Tensor<T>& rhs)
+template<typename Tp>
+inline Tensor<Tp>& Tensor<Tp>::operator-=(const Tensor<Tp>& rhs)
 {
     xx_ -= rhs.xx_; xy_ -= rhs.xy_; xz_ -= rhs.xz_;
     yx_ -= rhs.yx_; yy_ -= rhs.yy_; yz_ -= rhs.yz_;
@@ -193,8 +193,8 @@ inline Tensor<T>& Tensor<T>::operator-=(const Tensor<T>& rhs)
     return *this;
 }
 
-template<typename T>
-inline Tensor<T>& Tensor<T>::operator*=(const Scalar rhs)
+template<typename Tp>
+inline Tensor<Tp>& Tensor<Tp>::operator*=(const Scalar rhs)
 {
     xx_ *= rhs; xy_ *= rhs; xz_ *= rhs;
     yx_ *= rhs; yy_ *= rhs; yz_ *= rhs;
@@ -202,8 +202,8 @@ inline Tensor<T>& Tensor<T>::operator*=(const Scalar rhs)
     return *this;
 }
 
-template<typename T>
-inline Tensor<T>& Tensor<T>::operator/=(const Scalar rhs)
+template<typename Tp>
+inline Tensor<Tp>& Tensor<Tp>::operator/=(const Scalar rhs)
 {
     if (isZero(rhs))
     {
@@ -217,8 +217,8 @@ inline Tensor<T>& Tensor<T>::operator/=(const Scalar rhs)
     return *this;
 }
 
-template<typename T>
-inline bool Tensor<T>::isZeroTensor(const Scalar epsilon) const
+template<typename Tp>
+inline bool Tensor<Tp>::isZeroTensor(const Scalar epsilon) const
 {
     return (
         isZero(xx_, epsilon) && isZero(xy_, epsilon) &&
@@ -229,8 +229,8 @@ inline bool Tensor<T>::isZeroTensor(const Scalar epsilon) const
         );
 }
 
-template<typename T>
-inline bool Tensor<T>::isZero(const Scalar value, const Scalar epsilon)
+template<typename Tp>
+inline bool Tensor<Tp>::isZero(const Scalar value, const Scalar epsilon)
 {
     return (std::fabs(value) < epsilon);
 }

@@ -10,14 +10,14 @@
 
 using Scalar = double;
 
-template <typename T>
+template <typename Tp>
 class Vector;
 
 using Point = Vector<double>;
 
 
 // 前置声明
-template<typename T>
+template<typename Tp>
 class Tensor;
 
 
@@ -25,7 +25,7 @@ class Tensor;
  * @brief 向量/点的定义，模板类
  * @tparam T 数据类型
  */
-template <typename T>
+template <typename Tp>
 class Vector
 {
     using Scalar = double;
@@ -35,13 +35,13 @@ public:
 #pragma region 构造析构
     // 构造函数
     Vector();
-    Vector(T x, T y, T z = 0);  // 3D/2D
-    Vector(const Vector<T>& v);
-    Vector(Vector<T>&&) noexcept = default;
+    Vector(Tp x, Tp y, Tp z = 0);  // 3D/2D
+    Vector(const Vector<Tp>& v);
+    Vector(Vector<Tp>&&) noexcept = default;
 
     // 赋值重载
-    Vector<T>& operator=(const Vector<T>& src);
-    Vector<T>& operator=(Vector<T>&& src) noexcept = default;
+    Vector<Tp>& operator=(const Vector<Tp>& src);
+    Vector<Tp>& operator=(Vector<Tp>&& src) noexcept = default;
 
     // 析构
     ~Vector() = default;
@@ -54,7 +54,7 @@ public:
     Vector<Scalar> operator+(const Vector<U>& rhs) const;        // Vector + Vector
     template<typename U>
     Vector<Scalar> operator-(const Vector<U>& rhs) const;        // Vector - Vector
-    Vector<T> operator-() const;                            // -Vector  取反
+    Vector<Tp> operator-() const;                            // -Vector  取反
 
     // 标量乘法
     Vector<Scalar> operator*(const Scalar rhs) const;                          // Vector * Scalar 右乘
@@ -63,16 +63,16 @@ public:
     Vector<Scalar> operator/(const Scalar rhs) const;                          // Vector / Scalar
 
     // 复合复制运算
-    Vector<T>& operator+=(const Vector<T>& rhs);        // Vector += Vector
-    Vector<T>& operator-=(const Vector<T>& rhs);        // Vector -= Vector
-    Vector<T>& operator*=(const Scalar rhs);        // Vector *= Scalar
-    Vector<T>& operator/=(const Scalar rhs);        // Vector /= Scalar
+    Vector<Tp>& operator+=(const Vector<Tp>& rhs);        // Vector += Vector
+    Vector<Tp>& operator-=(const Vector<Tp>& rhs);        // Vector -= Vector
+    Vector<Tp>& operator*=(const Scalar rhs);        // Vector *= Scalar
+    Vector<Tp>& operator/=(const Scalar rhs);        // Vector /= Scalar
 
     // 点乘
-    Scalar operator&(const Vector<T>& rhs);          // Vector & Vector  点乘
+    Scalar operator&(const Vector<Tp>& rhs);          // Vector & Vector  点乘
 
     // 叉乘
-    Vector<T> operator^(const Vector<T>& rhs);          // Vector ^ Vector  叉乘
+    Vector<Tp> operator^(const Vector<Tp>& rhs);          // Vector ^ Vector  叉乘
 
     // 矢量与张量运算
     template<typename U>
@@ -89,14 +89,14 @@ public:
     // 单位向量
     Vector<Scalar> unitVector() const;
     // 两点距离
-    Scalar getDistance(const Vector<T>& other) const;
+    Scalar getDistance(const Vector<Tp>& other) const;
     // 取坐标
-    T& x() { return x_; }
-    T& y() { return y_; }
-    T& z() { return z_; }
-    const T& x() const { return x_; }
-    const T& y() const { return y_; }
-    const T& z() const { return z_; }
+    Tp& x() { return x_; }
+    Tp& y() { return y_; }
+    Tp& z() { return z_; }
+    const Tp& x() const { return x_; }
+    const Tp& y() const { return y_; }
+    const Tp& z() const { return z_; }
 
     // 判断是否为0向量
     bool isZeroVector(const Scalar epsilon = EPSILON) const;
@@ -114,7 +114,7 @@ private:
 
 
 private:
-    T x_, y_, z_;   // 坐标
+    Tp x_, y_, z_;   // 坐标
 };
 
 
@@ -127,16 +127,16 @@ private:
 
 
 
-template<typename T>
-inline Vector<T>::Vector() : x_(0.0), y_(0.0), z_(0.0)
+template<typename Tp>
+inline Vector<Tp>::Vector() : x_(0.0), y_(0.0), z_(0.0)
 {}
 
-template<typename T>
-inline Vector<T>::Vector(T x, T y, T z) : x_(x), y_(y), z_(z)
+template<typename Tp>
+inline Vector<Tp>::Vector(Tp x, Tp y, Tp z) : x_(x), y_(y), z_(z)
 {}
 
-template <typename T>
-inline Vector<T>::Vector(const Vector<T>& src)
+template <typename Tp>
+inline Vector<Tp>::Vector(const Vector<Tp>& src)
 {
     x_ = src.x_;
     y_ = src.y_;
@@ -144,8 +144,8 @@ inline Vector<T>::Vector(const Vector<T>& src)
 }
 
 
-template<typename T>
-inline Vector<T>& Vector<T>::operator=(const Vector<T>& src)
+template<typename Tp>
+inline Vector<Tp>& Vector<Tp>::operator=(const Vector<Tp>& src)
 {
     if (&src == this)
     {
@@ -159,24 +159,24 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T>& src)
 }
 
 
-template<typename T>
+template<typename Tp>
 template<typename U>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::operator+(const Vector<U>& rhs) const
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::operator+(const Vector<U>& rhs) const
 {
     return Vector<Scalar>(x_ + rhs.x_, y_ + rhs.y_, z_ + rhs.z_);
 }
 
 
-template<typename T>
+template<typename Tp>
 template<typename U>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::operator-(const Vector<U>& rhs) const
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::operator-(const Vector<U>& rhs) const
 {
     return Vector<Scalar>(x_ - rhs.x_, y_ - rhs.y_, z_ - rhs.z_);
 }
 
-template<typename T>
+template<typename Tp>
 template<typename U>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::operator*(const Tensor<U>& rhs) const
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::operator*(const Tensor<U>& rhs) const
 {
     return Vector<Scalar>(
         x_ * rhs.xx() + y_ * rhs.yx() + z_ * rhs.zx(),
@@ -202,31 +202,31 @@ inline std::ostream& operator<<(std::ostream& out, const Vector<U>& vec)
 }
 
 
-template<typename T>
-inline Vector<T> Vector<T>::operator-() const
+template<typename Tp>
+inline Vector<Tp> Vector<Tp>::operator-() const
 {
-    return Vector<T>(-x_, -y_, -z_);
+    return Vector<Tp>(-x_, -y_, -z_);
 }
 
-template<typename T>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::operator*(const Scalar rhs) const
+template<typename Tp>
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::operator*(const Scalar rhs) const
 {
     return Vector<Scalar>(x_ * rhs, y_ * rhs, z_ * rhs);
 }
 
-template<typename T>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::operator/(const Scalar rhs) const
+template<typename Tp>
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::operator/(const Scalar rhs) const
 {
-    if (Vector<T>::isZero(rhs))
+    if (Vector<Tp>::isZero(rhs))
     {
         std::cerr << "Error: Division by zero in Vector::operator/." << std::endl;
         throw std::invalid_argument("Division by zero");
     }
-    return Vector<T>(x_ / rhs, y_ / rhs, z_ / rhs);
+    return Vector<Tp>(x_ / rhs, y_ / rhs, z_ / rhs);
 }
 
-template<typename T>
-inline Vector<T>& Vector<T>::operator+=(const Vector<T>& rhs)
+template<typename Tp>
+inline Vector<Tp>& Vector<Tp>::operator+=(const Vector<Tp>& rhs)
 {
     x_ += rhs.x_;
     y_ += rhs.y_;
@@ -234,8 +234,8 @@ inline Vector<T>& Vector<T>::operator+=(const Vector<T>& rhs)
     return *this;
 }
 
-template<typename T>
-inline Vector<T>& Vector<T>::operator-=(const Vector<T>& rhs)
+template<typename Tp>
+inline Vector<Tp>& Vector<Tp>::operator-=(const Vector<Tp>& rhs)
 {
     x_ -= rhs.x_;
     y_ -= rhs.y_;
@@ -243,8 +243,8 @@ inline Vector<T>& Vector<T>::operator-=(const Vector<T>& rhs)
     return *this;
 }
 
-template<typename T>
-inline Vector<T>& Vector<T>::operator*=(const Scalar rhs)
+template<typename Tp>
+inline Vector<Tp>& Vector<Tp>::operator*=(const Scalar rhs)
 {
     x_ *= rhs;
     y_ *= rhs;
@@ -252,10 +252,10 @@ inline Vector<T>& Vector<T>::operator*=(const Scalar rhs)
     return *this;
 }
 
-template<typename T>
-inline Vector<T>& Vector<T>::operator/=(const Scalar rhs)
+template<typename Tp>
+inline Vector<Tp>& Vector<Tp>::operator/=(const Scalar rhs)
 {
-    if (Vector<T>::isZero(rhs))
+    if (Vector<Tp>::isZero(rhs))
     {
         std::cerr << "Error: Division by zero in Vector::operator/=." << std::endl;
         throw std::invalid_argument("Division by zero");
@@ -266,36 +266,36 @@ inline Vector<T>& Vector<T>::operator/=(const Scalar rhs)
     return *this;
 }
 
-template<typename T>
-inline typename Vector<T>::Scalar Vector<T>::operator&(const Vector<T>& rhs)
+template<typename Tp>
+inline typename Vector<Tp>::Scalar Vector<Tp>::operator&(const Vector<Tp>& rhs)
 {
     return (x_ * rhs.x_ + y_ * rhs.y_ + z_ * rhs.z_);
 }
 
-template<typename T>
-inline Vector<T> Vector<T>::operator^(const Vector<T>& rhs)
+template<typename Tp>
+inline Vector<Tp> Vector<Tp>::operator^(const Vector<Tp>& rhs)
 {
-    return Vector<T>(
+    return Vector<Tp>(
         (y_ * rhs.z_ - z_ * rhs.y_),
         (z_ * rhs.x_ - x_ * rhs.z_),
         (x_ * rhs.y_ - y_ * rhs.x_)
     );
 }
 
-template<typename T>
-inline typename Vector<T>::Scalar Vector<T>::magnitude() const
+template<typename Tp>
+inline typename Vector<Tp>::Scalar Vector<Tp>::magnitude() const
 {
     return std::sqrt(x_ * x_ + y_ * y_ + z_ * z_);
 }
 
-template<typename T>
-inline typename Vector<T>::Scalar Vector<T>::magnitudeSquared() const
+template<typename Tp>
+inline typename Vector<Tp>::Scalar Vector<Tp>::magnitudeSquared() const
 {
     return (x_ * x_ + y_ * y_ + z_ * z_);
 }
 
-template<typename T>
-inline Vector<typename Vector<T>::Scalar> Vector<T>::unitVector() const
+template<typename Tp>
+inline Vector<typename Vector<Tp>::Scalar> Vector<Tp>::unitVector() const
 {
     if (this->isZeroVector())
     {
@@ -306,8 +306,8 @@ inline Vector<typename Vector<T>::Scalar> Vector<T>::unitVector() const
     return Vector<Scalar>(x_ / mag, y_ / mag, z_ / mag);
 }
 
-template<typename T>
-inline typename Vector<T>::Scalar Vector<T>::getDistance(const Vector<T>& other) const
+template<typename Tp>
+inline typename Vector<Tp>::Scalar Vector<Tp>::getDistance(const Vector<Tp>& other) const
 {
     return std::sqrt(
         (x_ - other.x_) * (x_ - other.x_) +
@@ -316,14 +316,14 @@ inline typename Vector<T>::Scalar Vector<T>::getDistance(const Vector<T>& other)
     );
 }
 
-template<typename T>
-inline bool Vector<T>::isZero(Scalar value, Scalar epsilon)
+template<typename Tp>
+inline bool Vector<Tp>::isZero(Scalar value, Scalar epsilon)
 {
     return std::fabs(value) < epsilon;
 }
 
-template<typename T>
-inline bool Vector<T>::isZeroVector(Scalar epsilon) const
+template<typename Tp>
+inline bool Vector<Tp>::isZeroVector(Scalar epsilon) const
 {
     return isZero(x_, epsilon) && isZero(y_, epsilon) && isZero(z_, epsilon);
 }
