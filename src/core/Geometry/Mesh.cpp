@@ -851,4 +851,10 @@ void Mesh::calculateMeshInfo()
     {
         face.calculateFaceInfo(points_);
     }
+
+    // 计算Cell信息
+    for (auto& cell : cells_)
+    {
+        cell.calculateCellInfo(faces_, points_);
+    }
 }

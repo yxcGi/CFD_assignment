@@ -319,7 +319,7 @@ inline typename Vector<Tp>::Scalar Vector<Tp>::getDistance(const Vector<Tp>& oth
 template<typename Tp>
 inline bool Vector<Tp>::isZero(Scalar value, Scalar epsilon)
 {
-    return std::fabs(value) < epsilon;
+    return std::abs(value) < epsilon;
 }
 
 template<typename Tp>
