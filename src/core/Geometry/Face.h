@@ -13,7 +13,7 @@ class Face
     using LL = long long;
 public:
     Face() = delete;
-    Face(std::vector<ULL>& pointIndexs, ULL ownerIndex, ULL neighborIndex = -1);
+    Face(const std::vector<ULL>& pointIndexs, ULL ownerIndex, ULL neighborIndex = -1);
     Face(const Face& face) = default;
     Face(Face&&) noexcept = default;
     Face& operator=(const Face& rhs);
@@ -38,7 +38,8 @@ public:
     LL getNeighborIndex() const;
     // 设置邻单元
     void setNeighbor(ULL neighborIndex);
-    // 计算面信息
+    
+    // 计算面信息，构造时调用
     void calculateFaceInfo(const std::vector<Vector<Scalar>>& points);
 
     // 输出流重载

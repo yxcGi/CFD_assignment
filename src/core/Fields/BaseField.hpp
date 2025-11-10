@@ -9,22 +9,23 @@
 #include <vector>
 #include <functional>
 #include "FieldType.hpp"
+#include "BoundaryCondition.hpp"
 
 
 
 
 
-template <typename T>
+template <typename Tp>
 class BaseField             // 基类
 {
     using ULL = unsigned long long;
 public:
     BaseField() = delete;
     BaseField(const std::string& name, Mesh* mesh);
-    BaseField(const BaseField<T>& src) = delete;
-    BaseField(BaseField<T>&& src) noexcept = default;
-    BaseField<T>& operator=(const BaseField<T>& src) = delete;
-    BaseField<T>& operator=(BaseField<T>&& src) noexcept = default;
+    BaseField(const BaseField<Tp>& src) = delete;
+    BaseField(BaseField<Tp>&& src) noexcept = default;
+    BaseField<Tp>& operator=(const BaseField<Tp>& src) = delete;
+    BaseField<Tp>& operator=(BaseField<Tp>&& src) noexcept = default;
     ~BaseField() = default;
 
 public:
@@ -33,23 +34,29 @@ public:
     std::string getName() const;
     ULL getSize() const;
     field::FieldType getType() const;
+    Mesh* getMesh() const {return mesh_;}
 
     /* ---------赋值--------- */
     // 赋统一值
-    void setValue(const T& value);
+    void setValue(const Tp& value);
     // 对特定场点赋值
-    void setValue(ULL id, const T& value);
+    void setValue(ULL id, const Tp& value);
     // 采用函数对象，lambda表达式赋值(传入的是坐标值)
-    void setValue(const std::function<T(Scalar, Scalar, Scalar)>& func);
+    void setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func);
 
     // 场是否有效
     bool isValid() const { return isValid_; }
 
 
+    /* --------设置边界条件-------- */
+    // a * φ + b * ∂φ/∂n = c
+    void setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c);
+
+
 
     // 访问
-    T& operator[](ULL i);
-    const T& operator[](ULL i) const;
+    Tp& operator[](ULL i);
+    const Tp& operator[](ULL i) const;
 protected:
     ULL getDataNumer() const;   // 直接获取当前特定场的数据数量
 
@@ -57,8 +64,12 @@ protected:
 protected:
     std::string name_;          // 场名称
     Mesh* mesh_;                // 网格指针
-    std::vector<T> data_;       // 场数据
+    std::vector<Tp> data_;       // 场数据
     field::FieldType type_;            // 场类型
+
+    // 存储边界条件
+    std::unordered_map<std::string, BoundaryCondition<Tp>> boundaryConditions_;
+
     bool isValid_;              // 场是否有效
 };
 
@@ -66,22 +77,22 @@ protected:
 
 
 
-template<typename T>
-inline BaseField<T>::BaseField(const std::string& name, Mesh* mesh)
+template<typename Tp>
+inline BaseField<Tp>::BaseField(const std::string& name, Mesh* mesh)
     : name_(name)
     , mesh_(mesh)
     , type_(field::FieldType::BASE)
     , isValid_(false)
 {}
 
-template<typename T>
-inline std::string BaseField<T>::getName() const
+template<typename Tp>
+inline std::string BaseField<Tp>::getName() const
 {
     return name_;
 }
 
-template<typename T>
-inline typename BaseField<T>::ULL BaseField<T>::getSize() const
+template<typename Tp>
+inline typename BaseField<Tp>::ULL BaseField<Tp>::getSize() const
 {
     if (isValid_)
     {
@@ -91,14 +102,14 @@ inline typename BaseField<T>::ULL BaseField<T>::getSize() const
     return 0;
 }
 
-template<typename T>
-inline field::FieldType BaseField<T>::getType() const
+template<typename Tp>
+inline field::FieldType BaseField<Tp>::getType() const
 {
     return type_;
 }
 
-template<typename T>
-inline void BaseField<T>::setValue(const T& value)
+template<typename Tp>
+inline void BaseField<Tp>::setValue(const Tp& value)
 {
     if (isValid_)
     {
@@ -109,8 +120,8 @@ inline void BaseField<T>::setValue(const T& value)
     isValid_ = true;
 }
 
-template<typename T>
-inline void BaseField<T>::setValue(ULL id, const T& value)
+template<typename Tp>
+inline void BaseField<Tp>::setValue(ULL id, const Tp& value)
 {
     if (isValid_)
     {
@@ -121,8 +132,8 @@ inline void BaseField<T>::setValue(ULL id, const T& value)
     throw std::runtime_error("Field is not valid!");
 }
 
-template<typename T>
-inline void BaseField<T>::setValue(const std::function<T(Scalar, Scalar, Scalar)>& func)
+template<typename Tp>
+inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func)
 {
     if (!isValid_)
     {
@@ -163,8 +174,32 @@ inline void BaseField<T>::setValue(const std::function<T(Scalar, Scalar, Scalar)
     }
 }
 
-template<typename T>
-inline T& BaseField<T>::operator[](ULL i)
+template<typename Tp>
+inline void BaseField<Tp>::setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c)
+{
+    bool isExistBoundaryPatch = false;      // 是否存在边界
+    const std::unordered_map<std::string, BoundaryPatch>& boundaryPatches = this->mesh_->getBoundaryPatches();
+    for (const auto& [patchName, patch] : boundaryPatches)
+    {
+        if (name == patchName)
+        {
+            isExistBoundaryPatch = true;
+            break;
+        }
+    }
+
+    if (!isExistBoundaryPatch)      // 不存在边界，抛出异常
+    {
+        std::cerr << "Error: No such boundary patch named " << name << std::endl;
+        throw std::runtime_error("No such boundary patch named " + name);
+    }
+
+    // 存在边界，设置边界条件
+    boundaryConditions_.emplace(name, BoundaryCondition<Tp>(name, a, b, c));
+}
+
+template<typename Tp>
+inline Tp& BaseField<Tp>::operator[](ULL i)
 {
     if (isValid_)
     {
@@ -174,8 +209,8 @@ inline T& BaseField<T>::operator[](ULL i)
     throw std::runtime_error("Field is not valid!");
 }
 
-template<typename T>
-inline const T& BaseField<T>::operator[](ULL i) const
+template<typename Tp>
+inline const Tp& BaseField<Tp>::operator[](ULL i) const
 {
     if (isValid_)
     {
@@ -185,8 +220,8 @@ inline const T& BaseField<T>::operator[](ULL i) const
     throw std::runtime_error("Field is not valid!");
 }
 
-template<typename T>
-inline typename BaseField<T>::ULL BaseField<T>::getDataNumer() const
+template<typename Tp>
+inline typename BaseField<Tp>::ULL BaseField<Tp>::getDataNumer() const
 {
     if (type_ == field::FieldType::CELL_FIELD)
     {

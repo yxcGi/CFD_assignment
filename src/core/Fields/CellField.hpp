@@ -6,8 +6,8 @@
 #include "interpolation.hpp"
 
 
-template<typename T>
-class CellField : public BaseField<T>
+template<typename Tp>
+class CellField : public BaseField<Tp>
 {
     using ULL = unsigned long long;
 public:
@@ -15,28 +15,30 @@ public:
     // 构造但不初始化，场无效                     
     CellField(const std::string& name, Mesh* mesh);
     // 构造并初始化，场有效
-    CellField(const std::string& name, Mesh* mesh, const T& initialValue);
+    CellField(const std::string& name, Mesh* mesh, const Tp& initialValue);
 
 public:
     // 从单元向面插值（默认线性插值）
-    FaceField<T> cellToFace(interpolation::Scheme scheme = interpolation::Scheme::LINEAR) const;
+    FaceField<Tp> cellToFace(interpolation::Scheme scheme = interpolation::Scheme::LINEAR) const;
 
 private:
-    Interpolation<T> interpolator_;     // 插值函数对象
+    Interpolation<Tp> interpolator_;     // 插值函数对象
 };
 
 #pragma 函数实现
 
-template<typename T>
-inline CellField<T>::CellField(const std::string& name, Mesh* mesh)
-    : BaseField<T>(name, mesh)
+template<typename Tp>
+inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh)
+    : BaseField<Tp>(name, mesh)
+    , interpolator_(Interpolation<Tp>())
 {
     this->type_ = field::FieldType::CELL_FIELD;
 }
 
-template<typename T>
-inline CellField<T>::CellField(const std::string& name, Mesh* mesh, const T& initialValue)
-    : BaseField<T>(name, mesh)
+template<typename Tp>
+inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh, const Tp& initialValue)
+    : BaseField<Tp>(name, mesh)
+    , interpolator_(Interpolation<Tp>())
 {
     this->type_ = field::FieldType::CELL_FIELD;
     // 初始化大小
@@ -45,8 +47,8 @@ inline CellField<T>::CellField(const std::string& name, Mesh* mesh, const T& ini
     this->isValid_ = true;
 }
 
-template<typename T>
-inline FaceField<T> CellField<T>::cellToFace(interpolation::Scheme scheme) const
+template<typename Tp>
+inline FaceField<Tp> CellField<Tp>::cellToFace(interpolation::Scheme scheme) const
 {
     using LL = long long;
 
@@ -54,6 +56,9 @@ inline FaceField<T> CellField<T>::cellToFace(interpolation::Scheme scheme) const
     const std::vector<Face>& faces = mesh->getFaces();  // 面列表
     const std::vector<Cell>& cells = mesh->getCells();
     // ULL faceNum = mesh->getFaceNumber();
+
+    // 创建面场
+    FaceField<Tp> faceField(this->name_, mesh);
 
 
     // 先遍历内部面
@@ -82,14 +87,55 @@ inline FaceField<T> CellField<T>::cellToFace(interpolation::Scheme scheme) const
         Scalar alpha = ownerDistance / (ownerDistance + neighborDistance);
 
         // 插值
-        T ownerValue = this->data_[ownerIndex];
-        T neighborValue = this->data_[neighborIndex];
+        Tp ownerValue = this->data_[ownerIndex];
+        Tp neighborValue = this->data_[neighborIndex];
 
-        T faceValue = interpolator_(ownerValue, neighborValue, scheme, alpha);
+        Tp faceValue = interpolator_(ownerValue, neighborValue, scheme, alpha);
+
+        // 设置面场
+        faceField.setValue(internalFaceIndex, faceValue);
     }
 
-    // 再遍历边界面，需考虑边界条件    挖坑
-    std::vector<ULL> boundaryFaceIndexes = mesh->getBoundaryFaceIndexes();
+    // 再遍历边界面，需考虑边界条件
+    // using BoundaryConditionMap = std::unordered_map<std::string, BoundaryCondition<T>>;
+    for (const auto& [name, bc] : this->boundaryConditions_)
+    {
+        ULL nFace = bc.getNFace();
+        ULL startFace = bc.getStartFace();
+
+
+
+        for (ULL boundaryFaceIndex = startFace;
+            boundaryFaceIndex < startFace + nFace;
+            ++boundaryFaceIndex)
+        {
+            const Face& face = faces[boundaryFaceIndex];
+            ULL ownerIndex = face.getOwnerIndex();
+            const Cell& ownerCell = cells[ownerIndex];
+            const Vector<Tp>& faceCenter = face.getCenter();
+            const Vector<Tp>& ownerCenter = ownerCell.getCenter();
+            const Vector<Scalar>& normal = face.getNormal();   // 面法向量
+            Vector<Scalar> V_CB = faceCenter - ownerCenter;
+
+            // 计算中间量, normal = E + T
+            Vector<Scalar> E = V_CB / (V_CB & normal);
+            Vector<Scalar> T = normal - E;
+            Scalar E_magnitude = E.magnitude();
+            Scalar distance_CB = ownerCenter.getDistance(faceCenter);
+            Scalar a = bc.get_a();
+            Scalar b = bc.get_b();
+            const Tp& c = bc.get_c();
+            // const auto& gradientCell =       // 计算梯度，挖坑
+
+
+            // 计算c1, c2
+            auto c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
+            // auto c2 = (c - b * )    // 需要梯度计算，挖坑
+
+
+            // faceField.setValue(boundaryFaceIndex, bc.)
+        }
+    }
 }
 
 

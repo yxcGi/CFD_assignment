@@ -5,7 +5,7 @@ using LL = long long;
 using Scalar = double;
 
 Face::Face(
-    std::vector<ULL>& pointIndexs,
+    const std::vector<ULL>& pointIndexs,
     ULL ownerIndex,
     ULL neighborIndex
 )
@@ -32,6 +32,16 @@ const std::vector<ULL>& Face::getPointIndexes() const
     return pointIndexes_;
 }
 
+const Vector<Scalar>& Face::getNormal() const
+{
+    return normal_;
+}
+
+const Vector<Scalar>& Face::getCenter() const
+{
+    return center_;
+}
+
 int Face::getPointNum() const
 {
     return pointNum_;
@@ -46,7 +56,7 @@ LL Face::getNeighborIndex() const
 {
     return neighbor_;
 }
-
+    
 void Face::setNeighbor(ULL neighborIndex)
 {
     neighbor_ = neighborIndex;

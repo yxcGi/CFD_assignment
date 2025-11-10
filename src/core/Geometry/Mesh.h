@@ -2,8 +2,7 @@
 #define MESH_H_
 
 
-#include <iostream>
-#include <fstream>
+// #include <iostream>
 #include <vector>
 #include <unordered_map>
 #include "Vector.hpp"
@@ -52,6 +51,9 @@ public:
     ULL getInternalCellNumber() const;
     ULL getBoundaryFaceNumber() const;
 
+    const std::unordered_map<std::string, BoundaryPatch>&
+        getBoundaryPatches() const;
+
     // 用于获取不同类型场的数量的统一接口
     ULL getNumber(field::FieldType type) const;
 
@@ -90,7 +92,7 @@ private:
     std::vector<Cell> cells_;                                               // 单元列表
     std::unordered_set<ULL> internalCellIndexes_;                                 // 内部单元索引列表
     std::unordered_set<ULL> boundaryCellIndexes_;                                 // 边界面索引列表
-    std::unordered_map<std::string, BoundaryPatch> boundaryPatch_;     // 边界条件映射
+    std::unordered_map<std::string, BoundaryPatch> boundaryPatches_;     // 边界条件映射
     bool isValid_;                                                          // 网格是否有效
     std::string meshPath_;                                                  // 网格路径
 
