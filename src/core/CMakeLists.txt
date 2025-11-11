@@ -25,4 +25,5 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/Geometry
     ${CMAKE_CURRENT_SOURCE_DIR}/Math
     ${CMAKE_CURRENT_SOURCE_DIR}/Fields
+    ${CMAKE_CURRENT_SOURCE_DIR}/Fields/FieldOperators
 )

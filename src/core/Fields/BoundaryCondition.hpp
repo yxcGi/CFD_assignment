@@ -25,7 +25,7 @@ public:
 
     Scalar get_a() const;
     Scalar get_b() const;
-    Tp get_c() const;
+    const Tp& get_c() const;
 
 private:
     std::string name_;      // 边界名
@@ -79,7 +79,7 @@ inline typename BoundaryCondition<Tp>::Scalar BoundaryCondition<Tp>::get_b() con
 }
 
 template<typename Tp>
-inline Tp BoundaryCondition<Tp>::get_c() const
+inline const Tp& BoundaryCondition<Tp>::get_c() const
 {
     return c_;
 }
