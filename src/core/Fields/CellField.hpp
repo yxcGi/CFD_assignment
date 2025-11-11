@@ -26,7 +26,6 @@ private:
 };
 
 #pragma 函数实现
-
 template<typename Tp>
 inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh)
     : BaseField<Tp>(name, mesh)

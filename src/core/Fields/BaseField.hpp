@@ -34,7 +34,8 @@ public:
     std::string getName() const;
     ULL getSize() const;
     field::FieldType getType() const;
-    Mesh* getMesh() const {return mesh_;}
+    Mesh* getMesh() const;
+    const std::unordered_map<std::string, BoundaryCondition<Tp>>& getBoundaryConditions() const;
 
     /* ---------赋值--------- */
     // 赋统一值
@@ -45,7 +46,7 @@ public:
     void setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func);
 
     // 场是否有效
-    bool isValid() const { return isValid_; }
+    bool isValid() const;
 
 
     /* --------设置边界条件-------- */
@@ -106,6 +107,18 @@ template<typename Tp>
 inline field::FieldType BaseField<Tp>::getType() const
 {
     return type_;
+}
+
+template<typename Tp>
+inline Mesh* BaseField<Tp>::getMesh() const
+{
+    return mesh_;
+}
+
+template<typename Tp>
+inline const std::unordered_map<std::string, BoundaryCondition<Tp>>& BaseField<Tp>::getBoundaryConditions() const
+{
+    return boundaryConditions_;
 }
 
 template<typename Tp>
@@ -172,6 +185,12 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
         std::cerr << "Error: Field type is not set!" << std::endl;
         throw std::runtime_error("Field type is not set!");
     }
+}
+
+template<typename Tp>
+inline bool BaseField<Tp>::isValid() const
+{
+    return isValid_;
 }
 
 template<typename Tp>

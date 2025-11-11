@@ -12,9 +12,11 @@ int main()
 
     mesh.writeMeshToFile("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/outputPolyMesh");
 
-    CellField<Scalar> cellField("adf", &mesh);
+    FaceField<Scalar> phi("adf", &mesh);
 
-    cellField.cellToFace();
+    // cellField.cellToFace();
+    // phi.setBoundaryCondition("const std::string &name", Scalar a, Scalar b, const double &c)
+
 
     // // 测试
 

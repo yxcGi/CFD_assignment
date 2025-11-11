@@ -92,7 +92,9 @@ void Cell::calculateCellInfo(
             Point faceCenter = face.getCenter();
             Point thisCenter = 0.75 * faceCenter + 0.25 * volumeCenter; // 本锥体形心
 
-            Scalar thisVolume = std::abs(face.getArea() * (volumeCenter - faceCenter) & face.getNormal()) / 3.0;
+            Scalar thisVolume = std::abs(
+                face.getArea() * (volumeCenter - faceCenter) & face.getNormal()
+            ) / 3.0;
             allVolume += thisVolume;
             weightedCenter += thisCenter * thisVolume;
         }
