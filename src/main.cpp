@@ -2,7 +2,7 @@
 #include "Math/Vector.hpp"
 #include "Geometry/Mesh.h"
 #include "Math/Tensor.hpp"
-#include "Fields/CellField.hpp"
+#include <Field.hpp>
 
 int main()
 {
@@ -10,9 +10,21 @@ int main()
     // 读取网格
     Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
-    mesh.writeMeshToFile("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/outputPolyMesh");
+    // 创建标量场
+    Field<Scalar> phi("T", &mesh);
 
-    FaceField<Scalar> phi("adf", &mesh);
+    phi.setValue(0.0);
+    
+    phi.setBoundaryCondition("inlet", 1, 0, 300);
+    phi.setBoundaryCondition("outlet", 1, 0, 300);
+    phi.setBoundaryCondition("upperWall", 1, 0, 300);
+    phi.setBoundaryCondition("lowerWall", 1, 0, 300);
+    phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
+
+    phi.cellToFace();
+
+
+    
 
     // cellField.cellToFace();
     // phi.setBoundaryCondition("const std::string &name", Scalar a, Scalar b, const double &c)

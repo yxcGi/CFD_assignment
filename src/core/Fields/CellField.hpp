@@ -12,24 +12,24 @@ class CellField : public BaseField<Tp>
     using ULL = unsigned long long;
 public:
     CellField() = delete;
+    CellField(CellField<Tp>&&) noexcept = default;
     // 构造但不初始化，场无效                     
     CellField(const std::string& name, Mesh* mesh);
     // 构造并初始化，场有效
     CellField(const std::string& name, Mesh* mesh, const Tp& initialValue);
-
+    CellField<Tp>& operator=(const CellField<Tp>& other);
+    CellField<Tp>& operator=(CellField<Tp>&&) noexcept = default;
 public:
     // 从单元向面插值（默认线性插值）
     FaceField<Tp> cellToFace(interpolation::Scheme scheme = interpolation::Scheme::LINEAR) const;
 
 private:
-    Interpolation<Tp> interpolator_;     // 插值函数对象
 };
 
 #pragma 函数实现
 template<typename Tp>
 inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh)
     : BaseField<Tp>(name, mesh)
-    , interpolator_(Interpolation<Tp>())
 {
     this->type_ = field::FieldType::CELL_FIELD;
 }
@@ -37,13 +37,22 @@ inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh)
 template<typename Tp>
 inline CellField<Tp>::CellField(const std::string& name, Mesh* mesh, const Tp& initialValue)
     : BaseField<Tp>(name, mesh)
-    , interpolator_(Interpolation<Tp>())
 {
     this->type_ = field::FieldType::CELL_FIELD;
     // 初始化大小
     ULL cellNum = this->getDataNumer();
     this->data_.resize(cellNum, initialValue);
     this->isValid_ = true;
+}
+
+template<typename Tp>
+inline CellField<Tp>& CellField<Tp>::operator=(const CellField<Tp>& other)
+{
+    if (this != &other)
+    {
+        BaseField<Tp>::operator=(other);  // 调用基类的赋值运算符
+    }
+    return *this;
 }
 
 template<typename Tp>
