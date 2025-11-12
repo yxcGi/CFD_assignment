@@ -3,6 +3,7 @@
 #include "FaceField.hpp"
 #include "CellField.hpp"
 #include "FieldOperators/Gradient.hpp"
+#include <algorithm>
 
 
 // 采用模板全特化，判断梯度类型
@@ -10,7 +11,7 @@ template<typename T>
 struct GradientType;
 
 template<>
-struct GradientType<Scalar>     
+struct GradientType<Scalar>
 {
     using Type = Vector<Scalar>;
 };
@@ -51,6 +52,10 @@ public:
 
     // 场是否有效
     bool isValid() const;
+    // 边界条件是否有效
+    bool isBoundaryConditionValid() const;
+
+
 
 
     // cell场到face场的差值
@@ -73,10 +78,12 @@ private:
     FaceField<Tp> faceField_;        // 当前面场值
     CellField<Tp> cellField_;        // 当前单元场值
     CellField<Tp> cellField_0_;      // 上一步单元场的值
+    CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_0_; // 上一步单元场梯度
     // CellField<typename GradientType<Tp>::Type> cellGradientField_; // 单元场梯度
-    CellField<decltype(Tp() * Vector<Scalar>())> cellGradientField_; // 单元场梯度
+    CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_; // 单元场梯度
     std::string name_;
-    GradientMethod gradientMethod_{GradientMethod::GAUSS_GREEN};
+    GradientMethod gradientMethod_{ GradientMethod::GAUSS_GREEN };
+    std::unordered_map<std::string, BoundaryCondition<Tp>> boundaryConditions_;
 };
 
 #pragma region 函数实现
@@ -86,13 +93,22 @@ inline Field<Tp>::Field(const std::string& name, Mesh* mesh)
     : faceField_(name, mesh)
     , cellField_(name, mesh)
     , name_(name)
-{}
+{
+    const std::unordered_map<std::string, BoundaryPatch>& boundaryPatches = mesh->getBoundaryPatches();
+    for (const auto& [name, patch] : boundaryPatches)
+    {
+        boundaryConditions_.emplace(name, BoundaryCondition<Tp>(patch));
+    }
+}
 
 template<typename Tp>
 inline void Field<Tp>::setValue(const Tp& value)
 {
     faceField_.setValue(value);
     cellField_.setValue(value);
+
+    // 利用面值计算单元中心梯度
+    cellField_0_ = grad(*this, gradientMethod_);
 }
 
 template<typename Tp>
@@ -100,6 +116,9 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
 {
     faceField_.setValue(func);
     cellField_.setValue(func);
+
+    // 利用面值计算单元中心梯度
+    cellField_0_ = grad(*this, gradientMethod_);
 }
 
 
@@ -134,8 +153,25 @@ inline bool Field<Tp>::isValid() const
 }
 
 template<typename Tp>
+inline bool Field<Tp>::isBoundaryConditionValid() const
+{
+    return std::all_of(
+        boundaryConditions_.begin(),
+        boundaryConditions_.end(),
+        [](const std::pair<std::string, BoundaryCondition<Tp>>& bc) {
+            return bc.second.isValid();
+        }
+    );
+}
+
+template<typename Tp>
 inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 {
+    if (!isValid())
+    {
+        throw std::runtime_error("Field is not valid!");
+    }
+
     using LL = long long;
     Mesh* mesh = this->getMesh();      // 获取网格
     const std::vector<Face>& faces = mesh->getFaces();  // 面列表
@@ -145,7 +181,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
     std::vector<ULL> internalFaceIndexes = mesh->getInternalFaceIndexes();
     const CellField<Tp>& cellField = this->getCellField();
 
-    for (const ULL internalFaceIndex : internalFaceIndexes)
+    for (const ULL internalFaceIndex : internalFaceIndexes)     // 遍历内部面
     {
         // 获取当前面，以及其相邻单元索引
         const Face& face = faces[internalFaceIndex];
@@ -212,10 +248,12 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
             // auto c2 = (c - b * )    // 需要梯度计算，挖坑
             auto cellGradient = grad(*this, gradientMethod_);
-            // Tp = c2 = ()
+            Tp c2 = (c - b * cellGradient[ownerIndex] * T) * distance_CB / (a * distance_CB + b * E_magnitude);
 
+            // 计算边界面值
+            Tp boundaryFaceValue = c1 * cellField[ownerIndex] + c2;
 
-            // faceField.setValue(boundaryFaceIndex, bc.)
+            faceField_.setValue(boundaryFaceIndex, boundaryFaceValue);
         }
     }
 }
@@ -224,4 +262,23 @@ template<typename Tp>
 inline void Field<Tp>::setGradientMethod(GradientMethod method)
 {
     gradientMethod_ = method;
+}
+
+template<typename Tp>
+inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c)
+{
+    if (!isValid())
+    {
+        throw std::runtime_error("Field is not valid!");
+    }
+
+    // 判断是否存在该边界
+    auto it = boundaryConditions_.find(name);
+    if (it == boundaryConditions_.end())
+    {
+        std::cerr << "Boundary condition " << name << " does not exist!" << std::endl;
+        throw std::runtime_error("Boundary condition does not exist!");
+    }
+    it->second.setBoundaryCondition(name, a, b, c);
+    it->second.setValid();      // 设置该边界条件有效
 }

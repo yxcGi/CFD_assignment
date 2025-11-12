@@ -24,21 +24,22 @@ template <typename Tp>
 inline auto grad(
     const Field<Tp>& field,
     GradientMethod method = GradientMethod::GAUSS_GREEN
-) -> Field<decltype(Tp()* Vector<Scalar>())>
+) -> CellField<decltype(Tp() * Vector<Scalar>())>
 {
     using ULL = unsigned long long;
+    if (!field.getFaceField().isValid())        // 场必须有效
+    {
+        std::cerr << "Error: face field is not valid." << std::endl;
+        throw std::runtime_error("face field is not valid.");
+    }
     if (method == GradientMethod::GAUSS_GREEN)
     {
-        if (!field.getFaceField().isValid())        // 场必须有效
-        {
-            std::cerr << "Error: face field is not valid." << std::endl;
-            throw std::runtime_error("face field is not valid.");
-        }
+       
         // 取出当前面场，遍历每个cell, 计算梯度
         const FaceField<Tp>& currentFaceField = field.getFaceField();
         const std::vector<Cell>& cells = field.getMesh()->getCells();
         const std::vector<Face>& faces = field.getMesh()->getFaces();
-        Field<decltype(Tp()* Vector<Scalar>())> resultField(field.getMesh());
+        CellField<decltype(Tp()* Vector<Scalar>())> resultField(field.getMesh());
         for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
         {
             const Cell& cell = cells[i];
@@ -59,10 +60,6 @@ inline auto grad(
     }
     else if (method == GradientMethod::LEAST_SQUARES)     // 挖坑
     {
-        if (!field.getFaceField().isValid())        // 面场必须有效
-        {
-            std::cerr << "Error: face field is not valid." << std::endl;
-            throw std::runtime_error("face field is not valid.");
-        }
+
     }
 }
