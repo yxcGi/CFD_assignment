@@ -47,7 +47,7 @@ public:
     // 获取器
     const FaceField<Tp>& getFaceField() const;
     const CellField<Tp>& getCellField() const;
-    std::string name() const;
+    std::string getName() const;
     Mesh* getMesh() const;
 
     // 场是否有效
@@ -80,10 +80,11 @@ private:
     CellField<Tp> cellField_0_;      // 上一步单元场的值
     CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_0_; // 上一步单元场梯度
     // CellField<typename GradientType<Tp>::Type> cellGradientField_; // 单元场梯度
-    CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_; // 单元场梯度
+    // CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_; // 单元场梯度
     std::string name_;
     GradientMethod gradientMethod_{ GradientMethod::GAUSS_GREEN };
     std::unordered_map<std::string, BoundaryCondition<Tp>> boundaryConditions_;
+    Interpolation<Tp> interpolator_;     // 插值函数对象
 };
 
 #pragma region 函数实现
@@ -92,7 +93,10 @@ template<typename Tp>
 inline Field<Tp>::Field(const std::string& name, Mesh* mesh)
     : faceField_(name, mesh)
     , cellField_(name, mesh)
+    , cellField_0_(name + "_0", mesh)
+    , cellGradientField_0_(name + "_grad_0", mesh)
     , name_(name)
+    , interpolator_(Interpolation<Tp>())
 {
     const std::unordered_map<std::string, BoundaryPatch>& boundaryPatches = mesh->getBoundaryPatches();
     for (const auto& [name, patch] : boundaryPatches)
@@ -108,7 +112,7 @@ inline void Field<Tp>::setValue(const Tp& value)
     cellField_.setValue(value);
 
     // 利用面值计算单元中心梯度
-    cellField_0_ = grad(*this, gradientMethod_);
+    cellGradientField_0_ = grad(*this, gradientMethod_);
 }
 
 template<typename Tp>
@@ -118,7 +122,7 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
     cellField_.setValue(func);
 
     // 利用面值计算单元中心梯度
-    cellField_0_ = grad(*this, gradientMethod_);
+    cellGradientField_0_ = grad(*this, gradientMethod_);
 }
 
 
@@ -135,7 +139,7 @@ inline const CellField<Tp>& Field<Tp>::getCellField() const
 }
 
 template<typename Tp>
-inline std::string Field<Tp>::name() const
+inline std::string Field<Tp>::getName() const
 {
     return name_;
 }
@@ -169,7 +173,13 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 {
     if (!isValid())
     {
+        std::cerr << "Field is not valid!" << std::endl;
         throw std::runtime_error("Field is not valid!");
+    }
+    if (!isBoundaryConditionValid())
+    {
+        std::cerr << "Boundary condition is not valid!" << std::endl;
+        throw std::runtime_error("Boundary condition is not valid!");
     }
 
     using LL = long long;
@@ -247,7 +257,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             // 计算c1, c2
             Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
             // auto c2 = (c - b * )    // 需要梯度计算，挖坑
-            auto cellGradient = grad(*this, gradientMethod_);
+            const decltype(Tp() * Vector<Scalar>())& cellGradient = cellField_0_[ownerIndex];
             Tp c2 = (c - b * cellGradient[ownerIndex] * T) * distance_CB / (a * distance_CB + b * E_magnitude);
 
             // 计算边界面值
@@ -256,6 +266,8 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             faceField_.setValue(boundaryFaceIndex, boundaryFaceValue);
         }
     }
+    // 利用新的面值记录计算本时间步的梯度，用于下一时间步的边界面值计算
+    cellField_0_ = grad(*this);
 }
 
 template<typename Tp>

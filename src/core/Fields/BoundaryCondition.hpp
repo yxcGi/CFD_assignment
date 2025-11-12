@@ -16,8 +16,8 @@ public:
     // BoundaryCondition(Mesh* mesh); //
     BoundaryCondition(const BoundaryPatch& patch);
     BoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c);
-    BoundaryCondition(const BoundaryCondition<Tp>&) = delete;
-    BoundaryCondition(BoundaryCondition&&) = delete;
+    BoundaryCondition(const BoundaryCondition<Tp>&) = default;
+    BoundaryCondition(BoundaryCondition&&) = default;
     BoundaryCondition& operator=(const BoundaryCondition<Tp>&) = delete;
     BoundaryCondition& operator=(BoundaryCondition<Tp>&&) = delete;
 
@@ -31,6 +31,12 @@ public:
     const Tp& get_c() const;
     void setValid(bool flag = true);
 
+    // set
+    void setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c);
+
+
+
+    
     // 已经设置
     bool isValid() const;
 
@@ -114,6 +120,15 @@ template<typename Tp>
 inline void BoundaryCondition<Tp>::setValid(bool flag)
 {
     isSet_ = flag;
+}
+
+template<typename Tp>
+inline void BoundaryCondition<Tp>::setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c)
+{
+    name_ = name;
+    a_ = a;
+    b_ = b;
+    c_ = c;
 }
 
 template<typename Tp>
