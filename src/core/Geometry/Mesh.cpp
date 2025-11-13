@@ -859,15 +859,39 @@ void Mesh::calculateMeshInfo()
     }
 
     // 修正面的法向量由owner指向neighbor，需要用到cells_的信息，为避免参数传递，所以在本函数内实现具体细节
+
+    // bool yesFlag = false;    // 测试用
+    // bool noFlag = false;
     for (auto& face : faces_)
     {
         Point ownerCenter = cells_[face.getOwnerIndex()].getCenter();
-        Point neighborCenter = cells_[face.getOwnerIndex()].getCenter();
+        Point faceCenter = face.getCenter();
 
-        Vector<Scalar> ownerTonNeighbor = neighborCenter - ownerCenter;
-        if ((face.getNormal() & ownerTonNeighbor) < 0)
+        Vector<Scalar> ownerToFace = faceCenter - ownerCenter;
+
+        if ((face.getNormal() & ownerToFace) < 0)
         {
+            
+            // if (!yesFlag)        // 测试用
+            // {
+            //     std::cout << "face_id:" << face.getCenter() << std::endl;
+            //     yesFlag = true;
+            //     noFlag = false;
+            //     getchar();
+            // }
             face.reverseNormal();
+            // std::cout << "yes" << std::endl;
         }
+        // else
+        // {
+        //     if (!noFlag)         // 测试用
+        //     {
+        //         std::cout << "noface_id" << face.getCenter() << std::endl;
+        //         noFlag = true;
+        //         yesFlag = false;
+        //         getchar();
+        //     }
+        //     std::cout << "no" << std::endl;
+        // }
     }
 }
