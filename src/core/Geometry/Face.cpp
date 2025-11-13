@@ -10,8 +10,8 @@ Face::Face(
     ULL neighborIndex
 )
     : pointNum_(pointIndexs.size())
-    , owner_(ownerIndex)
-    , neighbor_(neighborIndex)
+    , ownerIndex_(ownerIndex)
+    , neighborIndex_(neighborIndex)
 {
     pointIndexes_ = std::move(pointIndexs);
 }
@@ -37,6 +37,7 @@ const Vector<Scalar>& Face::getNormal() const
     return normal_;
 }
 
+
 Scalar Face::getArea() const
 {
     return area_;
@@ -54,17 +55,17 @@ int Face::getPointNum() const
 
 ULL Face::getOwnerIndex() const
 {
-    return owner_;
+    return ownerIndex_;
 }
 
 LL Face::getNeighborIndex() const
 {
-    return neighbor_;
+    return neighborIndex_;
 }
 
 void Face::setNeighbor(ULL neighborIndex)
 {
-    neighbor_ = neighborIndex;
+    neighborIndex_ = neighborIndex;
 }
 
 void Face::calculateFaceInfo(const std::vector<Vector<Scalar>>& points)
@@ -124,6 +125,8 @@ void Face::calculateFaceInfo(const std::vector<Vector<Scalar>>& points)
         Vector<Scalar> vector2 = point2 - point0;
 
         normal_ = (vector1 ^ vector2).unitVector();
+        // 修正法向量方向
+        
     }
     else                    // 四边形以上需要加权
     {
@@ -144,6 +147,11 @@ void Face::calculateFaceInfo(const std::vector<Vector<Scalar>>& points)
 
     // 测试
     // printFaceInfo();
+}
+
+void Face::reverseNormal()
+{
+    normal_ = -normal_;
 }
 
 Scalar Face::calculateArea(const std::vector<Vector<Scalar>>& points) const

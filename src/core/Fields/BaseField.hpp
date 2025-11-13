@@ -45,7 +45,7 @@ public:
     // 采用函数对象，lambda表达式赋值(传入的是坐标值)
     void setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func);
 
-    // 场是否有效
+    // 场是否有效，必须要setValue初始化后才能有效
     bool isValid() const;
 
 

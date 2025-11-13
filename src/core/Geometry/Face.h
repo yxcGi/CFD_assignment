@@ -6,6 +6,8 @@
 #include "Vector.hpp"
 #include <iostream>
 
+class Cell;
+
 class Face
 {
     using Scalar = double;
@@ -42,6 +44,9 @@ public:
     // 计算面信息，读网格时调用
     void calculateFaceInfo(const std::vector<Vector<Scalar>>& points);
 
+    // 修正法向量(反向)
+    void reverseNormal();
+
     // 输出流重载
     friend std::ostream& operator<<(std::ostream& out, const Face& face);
 
@@ -57,8 +62,8 @@ public:
             std::cout << idx << " ";
         }
         std::cout << std::endl;
-        std::cout << "  Owner: " << owner_ << std::endl;
-        std::cout << "  Neighbor: " << neighbor_ << std::endl;
+        std::cout << "  Owner: " << ownerIndex_ << std::endl;
+        std::cout << "  Neighbor: " << neighborIndex_ << std::endl;
         std::cout << "  Area: " << area_ << std::endl;
         std::cout << "  Center: " << center_ << std::endl;
         std::cout << "  Normal: " << normal_ << std::endl;
@@ -74,8 +79,8 @@ private:
     // ULL id;
     int pointNum_;                      // 点的数量
     std::vector<ULL> pointIndexes_;     // 构成面的点的索引
-    ULL owner_;                         // 主单元
-    LL neighbor_;                       // 邻接单元
+    ULL ownerIndex_;                         // 主单元编号
+    LL neighborIndex_;                       // 邻单元编号
     Vector<Scalar> normal_;             // 法向量
     Scalar area_;                       // 面积
     Vector<Scalar> center_;             // 面心

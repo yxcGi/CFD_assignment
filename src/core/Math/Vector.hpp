@@ -69,10 +69,10 @@ public:
     Vector<Tp>& operator/=(const Scalar rhs);        // Vector /= Scalar
 
     // 点乘
-    Scalar operator&(const Vector<Tp>& rhs);          // Vector & Vector  点乘
+    Scalar operator&(const Vector<Tp>& rhs) const;          // Vector & Vector  点乘
 
     // 叉乘
-    Vector<Tp> operator^(const Vector<Tp>& rhs);          // Vector ^ Vector  叉乘
+    Vector<Tp> operator^(const Vector<Tp>& rhs)const;          // Vector ^ Vector  叉乘
 
     // 矢量与张量运算
     template<typename U>
@@ -264,13 +264,13 @@ inline Vector<Tp>& Vector<Tp>::operator/=(const Scalar rhs)
 }
 
 template<typename Tp>
-inline typename Vector<Tp>::Scalar Vector<Tp>::operator&(const Vector<Tp>& rhs)
+inline typename Vector<Tp>::Scalar Vector<Tp>::operator&(const Vector<Tp>& rhs) const
 {
     return (x_ * rhs.x_ + y_ * rhs.y_ + z_ * rhs.z_);
 }
 
 template<typename Tp>
-inline Vector<Tp> Vector<Tp>::operator^(const Vector<Tp>& rhs)
+inline Vector<Tp> Vector<Tp>::operator^(const Vector<Tp>& rhs) const
 {
     return Vector<Tp>(
         (y_ * rhs.z_ - z_ * rhs.y_),
