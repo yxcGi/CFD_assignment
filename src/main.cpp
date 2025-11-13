@@ -24,6 +24,8 @@ int main()
         phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
 
         phi.cellToFace();
+
+        
     }
     catch (const std::exception &e)
     {

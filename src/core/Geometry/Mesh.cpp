@@ -179,7 +179,7 @@ ULL Mesh::getNumber(field::FieldType type) const
     }
 
     if (type == field::FieldType::CELL_FIELD)
-        
+
     {
         return getCellNumber();
     }
@@ -195,7 +195,7 @@ ULL Mesh::getNumber(field::FieldType type) const
     {
         std::cerr << "Field type not supported." << std::endl;
         std::cerr << "The type is " << static_cast<int>(type) << std::endl;
-        throw std::runtime_error("Field type not supported"); 
+        throw std::runtime_error("Field type not supported");
     }
     std::cerr << "Unknown field type." << std::endl;
     throw std::runtime_error("Unknown field type");
@@ -856,5 +856,18 @@ void Mesh::calculateMeshInfo()
     for (auto& cell : cells_)
     {
         cell.calculateCellInfo(faces_, points_);
+    }
+
+    // 修正面的法向量由owner指向neighbor，需要用到cells_的信息，为避免参数传递，所以在本函数内实现具体细节
+    for (auto& face : faces_)
+    {
+        Point ownerCenter = cells_[face.getOwnerIndex()].getCenter();
+        Point neighborCenter = cells_[face.getOwnerIndex()].getCenter();
+
+        Vector<Scalar> ownerTonNeighbor = neighborCenter - ownerCenter;
+        if ((face.getNormal() & ownerTonNeighbor) < 0)
+        {
+            face.reverseNormal();
+        }
     }
 }

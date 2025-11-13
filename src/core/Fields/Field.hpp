@@ -4,6 +4,8 @@
 #include "CellField.hpp"
 #include "FieldOperators/Gradient.hpp"
 #include <algorithm>
+#include <fstream>
+
 
 
 // 采用模板全特化，判断梯度类型
@@ -22,10 +24,16 @@ struct GradientType<Vector<Scalar>>
     using Type = Tensor<Scalar>;
 };
 
+// 输出场的文件类型
+enum class writeFileType
+{
+    TECPLOT,
+};
+
 
 template <typename Tp>
 class Field
-{
+{   
     using ULL = unsigned long long;
 public:
     Field() = delete;
@@ -50,12 +58,10 @@ public:
     std::string getName() const;
     Mesh* getMesh() const;
 
-    // 场是否有效
+    // 场是否有效，必须要setValue场才有效
     bool isValid() const;
     // 边界条件是否有效
     bool isBoundaryConditionValid() const;
-
-
 
 
     // cell场到face场的差值
@@ -71,6 +77,9 @@ public:
     /* --------设置边界条件-------- */
     // a * φ + b * ∂φ/∂n = c
     void setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c);
+
+
+    void writeToFile(const std::string& fileName, writeFileType = writeFileType::TECPLOT) const;
 
 
 
@@ -287,7 +296,8 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     }
 
     // 判断是否存在该边界
-    auto it = boundaryConditions_.find(name);
+    using It = typename std::unordered_map<std::string, BoundaryCondition<Tp>>::iterator;
+    It it = boundaryConditions_.find(name);
     if (it == boundaryConditions_.end())
     {
         std::cerr << "Boundary condition " << name << " does not exist!" << std::endl;
@@ -295,4 +305,17 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     }
     it->second.setBoundaryCondition(name, a, b, c);
     it->second.setValid();      // 设置该边界条件有效
+}
+
+template<typename Tp>
+inline void Field<Tp>::writeToFile(const std::string& fileName, writeFileType) const
+{
+    if (!isValid())
+    {
+        std::cerr << "Field is not valid! cannot write to file!" << std::endl;
+        throw std::runtime_error("Field is not valid!");
+    }
+
+    std::ofstream ofs(fileName, std::ios::out);
+    
 }
