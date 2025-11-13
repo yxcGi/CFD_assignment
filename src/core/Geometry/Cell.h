@@ -24,7 +24,7 @@ public:
 
 public:
     // 获取单元的面索引列表
-    const std::vector<ULL>& getFaceIndices() const;
+    const std::vector<ULL>& getFaceIndexes() const;
     // 获取体积
     Scalar getVolume() const;
     // 获取单元中心

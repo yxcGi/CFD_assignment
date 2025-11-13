@@ -44,6 +44,12 @@ public:
     template<typename U>
     Vector<Scalar> operator*(const Vector<U>& rhs) const;   // Tensor * Vector
 
+    // 张量与标量
+    Tensor<Tp> operator*(const Scalar rhs) const;           // Tensor * Scalar
+    template<typename U>
+    friend Tensor<Scalar> operator*(const Scalar lhs, const Tensor<U>& rhs);
+    Tensor<Tp> operator/(const Scalar rhs) const;           // Tensor / Scalar
+
     // += -= /= *=
     Tensor<Tp>& operator+=(const Tensor<Tp>& rhs);        // Tensor += Tensor
     Tensor<Tp>& operator-=(const Tensor<Tp>& rhs);        // Tensor -= Tensor
@@ -176,6 +182,32 @@ inline Vector<typename Tensor<Tp>::Scalar> Tensor<Tp>::operator*(const Vector<U>
 }
 
 template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator*(const Scalar rhs) const
+{
+    return Tensor<Tp>(
+        xx_ * rhs, xy_ * rhs, xz_ * rhs,
+        yx_ * rhs, yy_ * rhs, yz_ * rhs,
+        zx_ * rhs, zy_ * rhs, zz_ * rhs
+    );
+}
+
+template<typename Tp>
+inline Tensor<Tp> Tensor<Tp>::operator/(const Scalar rhs) const
+{
+    if (isZero(rhs))
+    {
+        std::cerr << "Error: Division by zero in Tensor::operator/." << std::endl;
+        throw std::invalid_argument("Division by zero");
+    }
+
+    return Tensor<Tp>(
+        xx_ / rhs, xy_ / rhs, xz_ / rhs,
+        yx_ / rhs, yy_ / rhs, yz_ / rhs,
+        zx_ / rhs, zy_ / rhs, zz_ / rhs
+    );
+}
+
+template<typename Tp>
 inline Tensor<Tp>& Tensor<Tp>::operator+=(const Tensor<Tp>& rhs)
 {
     xx_ += rhs.xx_; xy_ += rhs.xy_; xz_ += rhs.xz_;
@@ -246,6 +278,12 @@ inline Tensor<Scalar> operator*(const Vector<U1>& lhs, const Vector<U2>& rhs)   
         lhs.y() * rhs.x(), lhs.y() * rhs.y(), lhs.y() * rhs.z(),
         lhs.z() * rhs.x(), lhs.z() * rhs.y(), lhs.z() * rhs.z()
     );
+}
+
+template<typename U>
+inline Tensor<Scalar> operator*(const Scalar lhs, const Tensor<U>& rhs)
+{
+    return rhs * lhs;
 }
 
 template<typename U>

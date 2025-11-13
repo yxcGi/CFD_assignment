@@ -93,8 +93,8 @@ template<typename Tp>
 inline Field<Tp>::Field(const std::string& name, Mesh* mesh)
     : faceField_(name, mesh)
     , cellField_(name, mesh)
-    , cellField_0_(name + "_0", mesh)
-    , cellGradientField_0_(name + "_grad_0", mesh)
+    , cellField_0_(name, mesh)
+    , cellGradientField_0_(name, mesh)
     , name_(name)
     , interpolator_(Interpolation<Tp>())
 {
@@ -110,6 +110,7 @@ inline void Field<Tp>::setValue(const Tp& value)
 {
     faceField_.setValue(value);
     cellField_.setValue(value);
+    cellField_0_.setValue(value);
 
     // 利用面值计算单元中心梯度
     cellGradientField_0_ = grad(*this, gradientMethod_);
@@ -120,6 +121,7 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
 {
     faceField_.setValue(func);
     cellField_.setValue(func);
+    cellField_0_.setValue(func);
 
     // 利用面值计算单元中心梯度
     cellGradientField_0_ = grad(*this, gradientMethod_);
@@ -257,8 +259,8 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             // 计算c1, c2
             Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
             // auto c2 = (c - b * )    // 需要梯度计算，挖坑
-            const decltype(Tp() * Vector<Scalar>())& cellGradient = cellField_0_[ownerIndex];
-            Tp c2 = (c - b * cellGradient[ownerIndex] * T) * distance_CB / (a * distance_CB + b * E_magnitude);
+            const decltype(Tp() * Vector<Scalar>())& cellGradient = cellGradientField_0_[ownerIndex];
+            Tp c2 = (c - (b * cellGradient & T)) * distance_CB / (a * distance_CB + b * E_magnitude);
 
             // 计算边界面值
             Tp boundaryFaceValue = c1 * cellField[ownerIndex] + c2;
@@ -267,7 +269,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         }
     }
     // 利用新的面值记录计算本时间步的梯度，用于下一时间步的边界面值计算
-    cellField_0_ = grad(*this);
+    cellGradientField_0_ = grad(*this);
 }
 
 template<typename Tp>

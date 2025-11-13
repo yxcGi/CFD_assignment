@@ -1,6 +1,10 @@
 # 添加子文件库
 add_subdirectory(core)
 
+# 在CMakeLists.txt中设置
+set(CMAKE_BUILD_TYPE Debug)
+
+
 # 生成可执行文件
 add_executable(${PRJ_NAME} main.cpp)
 

@@ -6,7 +6,7 @@ Cell::Cell()
     faceIndexes_.reserve(4);
 }
 
-const std::vector<Cell::ULL>& Cell::getFaceIndices() const
+const std::vector<Cell::ULL>& Cell::getFaceIndexes() const
 {
     return faceIndexes_;
 }
