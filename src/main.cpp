@@ -6,25 +6,34 @@
 
 int main()
 {
-    using Scalar = double;
-    // 读取网格
-    Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+    try
+    {
+        using Scalar = double;
+        // 读取网格
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
-    // 创建标量场
-    Field<Scalar> phi("T", &mesh);
+        // 创建标量场
+        Field<Scalar> phi("T", &mesh);
 
-    phi.setValue(0.0);
-    
-    phi.setBoundaryCondition("inlet", 1, 0, 300);
-    phi.setBoundaryCondition("outlet", 1, 0, 300);
-    phi.setBoundaryCondition("upperWall", 1, 0, 300);
-    phi.setBoundaryCondition("lowerWall", 1, 0, 300);
-    phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
+        phi.setValue(0.0);
 
-    phi.cellToFace();
+        phi.setBoundaryCondition("inlet", 1, 0, 300);
+        phi.setBoundaryCondition("outlet", 1, 0, 300);
+        phi.setBoundaryCondition("upperWall", 1, 0, 300);
+        phi.setBoundaryCondition("lowerWall", 1, 0, 300);
+        phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
+
+        phi.cellToFace();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
 
 
-    
+
+
 
     // cellField.cellToFace();
     // phi.setBoundaryCondition("const std::string &name", Scalar a, Scalar b, const double &c)

@@ -141,8 +141,12 @@ inline void BaseField<Tp>::setValue(ULL id, const Tp& value)
         data_[id] = value;
         return;
     }
-    std::cerr << "Error: Field is not valid!" << std::endl;
-    throw std::runtime_error("Field is not valid!");
+    else
+    {
+        data_.resize(getDataNumer(), Tp());
+        data_[id] = value;
+        isValid_ = true;
+    }
 }
 
 template<typename Tp>
@@ -153,8 +157,8 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
         std::cerr << "Error: Field is not valid!" << std::endl;
         throw std::runtime_error("Field is not valid!");
     }
-    
-    
+
+
     if (type_ == field::FieldType::CELL_FIELD)
     {
         for (ULL i = 0; i < data_.size(); ++i)
