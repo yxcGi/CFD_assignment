@@ -9,3 +9,5 @@ build
 main
 a.out*
 outputPolyMesh
+
+test

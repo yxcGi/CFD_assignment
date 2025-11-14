@@ -29,13 +29,19 @@ class Interpolation
 public:
     // 传两个值就是算数平均
     // T operator()(const T& phi1, const T& phi2);
-    Tp operator()(const Tp& phi1, const Tp& phi2, interpolation::Scheme scheme = interpolation::Scheme::LINEAR, Scalar alpha = 0.5) const;
+    Tp operator()(
+        const Tp& phi1, const Tp& phi2,
+        interpolation::Scheme scheme = interpolation::Scheme::LINEAR,
+        Scalar alpha = 0.5) const;
 };
 
 
 
 template<typename Tp>
-inline Tp Interpolation<Tp>::operator()(const Tp& phi1, const Tp& phi2, interpolation::Scheme scheme, Scalar alpha) const
+inline Tp Interpolation<Tp>::operator()(
+    const Tp& phi1, const Tp& phi2,
+    interpolation::Scheme scheme,
+    Scalar alpha) const
 {
     // phi1 * (1 - alpha) + phi2 * alpha
     if (scheme == interpolation::Scheme::LINEAR)

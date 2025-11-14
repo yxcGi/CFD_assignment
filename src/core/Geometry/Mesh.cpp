@@ -17,7 +17,10 @@ using LL = long long;
 Mesh::Mesh() : isValid_(false)
 {}
 
-Mesh::Mesh(const std::string& path) : isValid_(false), meshPath_(path)
+Mesh::Mesh(const std::string& path)
+    : isValid_(false)
+    , meshPath_(path)
+    , dimension_(Mesh::Dimension::THREE_D)
 {
     readMesh(path);
 }
@@ -133,6 +136,11 @@ ULL Mesh::getPointNumber() const
         throw std::runtime_error("Invalid mesh point number error");
     }
     return static_cast<ULL>(points_.size());
+}
+
+Mesh::Dimension Mesh::getDimension() const
+{
+    return dimension_;
 }
 
 ULL Mesh::getInternalCellNumber() const
@@ -329,6 +337,19 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
         // 添加至boundaryPatch_ map中
         BoundaryPatch patch(boundaryName, nFaces, startFace, type);
         boundaryPatches_.emplace(boundaryName, std::move(patch));
+
+        // 通过是否有empty来判断网格的维度，存在empty则为二维网格
+        for (const auto& [name, bP] : boundaryPatches_)
+        {
+            if (bP.getType() == BoundaryPatch::BoundaryType::EMPTY)
+            {
+                dimension_ = Mesh::Dimension::TWO_D;
+            }
+        }
+
+
+        
+        
 
         /* 测试用 */
         // std::cout << "Boundary Patch " << i + 1 << ": " << std::endl;

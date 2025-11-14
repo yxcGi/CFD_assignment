@@ -15,7 +15,7 @@ int main()
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
-        phi.setValue(0.0);
+        phi.setValue(100);
 
         phi.setBoundaryCondition("inlet", 1, 0, 300);
         phi.setBoundaryCondition("outlet", 1, 0, 300);
@@ -23,9 +23,8 @@ int main()
         phi.setBoundaryCondition("lowerWall", 1, 0, 300);
         phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
 
-        phi.cellToFace();
-
-        
+        // phi.cellToFace();
+        phi.writeToFile("phi");
     }
     catch (const std::exception &e)
     {

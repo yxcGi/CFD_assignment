@@ -23,6 +23,13 @@ class Mesh
     using ULL = unsigned long long;
     using Scalar = double;
 public:
+    enum class Dimension
+    {
+        TWO_D,
+        THREE_D
+    };
+
+public:
     Mesh();
     Mesh(const std::string& path);
     Mesh(const Mesh&) = delete;
@@ -47,6 +54,7 @@ public:
     ULL getCellNumber() const;
     ULL getFaceNumber() const;
     ULL getPointNumber() const;
+    Dimension getDimension() const;
 
     ULL getInternalCellNumber() const;
     ULL getBoundaryFaceNumber() const;
@@ -95,7 +103,7 @@ private:
     std::unordered_map<std::string, BoundaryPatch> boundaryPatches_;     // 边界条件映射
     bool isValid_;                                                          // 网格是否有效
     std::string meshPath_;                                                  // 网格路径
-
+    Dimension dimension_;                                                   // 网格维度
 };
 
 

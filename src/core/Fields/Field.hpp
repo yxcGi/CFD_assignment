@@ -25,7 +25,7 @@ struct GradientType<Vector<Scalar>>
 };
 
 // 输出场的文件类型
-enum class writeFileType
+enum class WriteFileType
 {
     TECPLOT,
 };
@@ -33,8 +33,10 @@ enum class writeFileType
 
 template <typename Tp>
 class Field
-{   
+{
     using ULL = unsigned long long;
+    // 定义0的界限
+    static constexpr Scalar EPSILON = 1e-10;
 public:
     Field() = delete;
     Field(const std::string& name, Mesh* mesh);
@@ -79,7 +81,12 @@ public:
     void setBoundaryCondition(const std::string& name, Scalar a, Scalar b, const Tp& c);
 
 
-    void writeToFile(const std::string& fileName, writeFileType = writeFileType::TECPLOT) const;
+    void writeToFile(const std::string& fileName, WriteFileType fileType = WriteFileType::TECPLOT) const;
+
+
+private:
+    // 私有接口
+    void writToTecplot(const std::string& fileName, Mesh::Dimension dim) const;
 
 
 
@@ -308,7 +315,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
 }
 
 template<typename Tp>
-inline void Field<Tp>::writeToFile(const std::string& fileName, writeFileType) const
+inline void Field<Tp>::writeToFile(const std::string& fileName, WriteFileType fileType) const
 {
     if (!isValid())
     {
@@ -316,6 +323,76 @@ inline void Field<Tp>::writeToFile(const std::string& fileName, writeFileType) c
         throw std::runtime_error("Field is not valid!");
     }
 
-    std::ofstream ofs(fileName, std::ios::out);
-    
+    Mesh::Dimension dim = this->getMesh()->getDimension();
+    if (dim == Mesh::Dimension::TWO_D)   // 二维
+    {
+        std::cout << "The two-dimensional field is being output..." << std::endl;
+        if (fileType == WriteFileType::TECPLOT)
+        {
+            writToTecplot(fileName, dim);
+        }
+    }
+    else        // 三维
+    {
+        std::cout << "The three-dimensional field is begin output..." << std::endl;
+        if (fileType == WriteFileType::TECPLOT)
+        {
+            writToTecplot(fileName, dim);
+        }
+    }
+}
+
+template<typename Tp>
+inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimension dim) const
+{
+    // 私有接口，公有接口调用输出时已经判断过Field是否有效。
+
+    Mesh* mesh = this->getMesh();
+
+    if (dim == Mesh::Dimension::TWO_D)  // 二维
+    {
+        std::ofstream ofs(fileName, std::ios::trunc);
+        if (!ofs.is_open())
+        {
+            std::cerr << "writToTecplot() Error: Unable to open file " << fileName << " for writing." << std::endl;
+            throw std::runtime_error(fileName + " file open error");
+        }
+
+        // 写入头信息
+        ofs << "Title=" << "\"" << this->getName() << "_2D_Tecplot\"" << std::endl;
+        if (std::is_same_v<Tp, Scalar>)       // 标量场
+        {
+            std::cout << "Writing scalar field to Tecplot file..." << std::endl;
+            ofs << R"(VARIABLES="X","Y",")" << name_ << "\"" << std::endl;
+            ofs << "ZONE T=\"" << name_ << "\",n=" << mesh->getPointNumber() << ",e=" << mesh->getCellNumber() << "f=fepoint" << ",et=triangle" << std::endl;
+
+            // 开始遍历cell然后输出信息
+            const std::vector<Cell>& cells = mesh->getCells();
+            for (ULL cellIndex = 0; cellIndex < cells.size(); ++cellIndex)
+            {
+                // 对于二维openfoam网格，需要寻找z坐标均大于0的顶点
+                const std::vector<ULL>& faceIndexes = cells[cellIndex].getFaceIndexes();
+                const std::vector<Face>& faces = mesh->getFaces();
+                for (ULL faceIndex : faceIndexes)
+                {
+                    const Face& face = faces[faceIndex];
+                    if (face.getCenter().z() > EPSILON) // 找到>0的界面
+                    {
+                        // 输出点的坐标和当前cell场的值
+                        const std::vector<ULL>& pointIndexes = face.getPointIndexes();
+                        for (ULL pointIndex : pointIndexes)
+                        {
+                            const Vector<Scalar>& point = mesh->getPoints()[pointIndex];
+                            ofs << point.x() << " " << point.y() << " " << this->getCellField()[cellIndex] << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+        else if (std::is_same_v<Tp, Vector<Scalar>>)    // 矢量场
+        {
+            std::cout << "Writing vector field to Tecplot file..." << std::endl;
+            ofs << R"(VARIABLES="X","Y","U","V")" << std::endl;
+        }
+    }
 }
