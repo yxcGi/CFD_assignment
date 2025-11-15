@@ -21,10 +21,10 @@ int main()
         phi.setBoundaryCondition("outlet", 1, 0, 300);
         phi.setBoundaryCondition("upperWall", 1, 0, 300);
         phi.setBoundaryCondition("lowerWall", 1, 0, 300);
-        phi.setBoundaryCondition("frontAndBack", 1, 0, 300);
+        phi.setBoundaryCondition("frontAndBack", 0, 1, 0);
 
         // phi.cellToFace();
-        phi.writeToFile("phi");
+        phi.writeToFile("phi.dat");
     }
     catch (const std::exception &e)
     {

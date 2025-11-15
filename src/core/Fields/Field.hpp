@@ -247,6 +247,11 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         ULL nFace = bc.getNFace();
         ULL startFace = bc.getStartFace();
 
+        if (bc.getType() ==
+            BoundaryPatch::BoundaryType::EMPTY) // 不需要处理empty边界
+        {
+            continue;
+        }
 
 
         for (ULL boundaryFaceIndex = startFace;
@@ -360,39 +365,113 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
 
         // 写入头信息
         ofs << "Title=" << "\"" << this->getName() << "_2D_Tecplot\"" << std::endl;
-        if (std::is_same_v<Tp, Scalar>)       // 标量场
+        if constexpr (std::is_same_v<Tp, Scalar>)       // 标量场
         {
             std::cout << "Writing scalar field to Tecplot file..." << std::endl;
             ofs << R"(VARIABLES="X","Y",")" << name_ << "\"" << std::endl;
-            ofs << "ZONE T=\"" << name_ << "\",n=" << mesh->getPointNumber() << ",e=" << mesh->getCellNumber() << "f=fepoint" << ",et=triangle" << std::endl;
+            ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber() << ",F=FECENTER";
 
-            // 开始遍历cell然后输出信息
-            const std::vector<Cell>& cells = mesh->getCells();
-            for (ULL cellIndex = 0; cellIndex < cells.size(); ++cellIndex)
+            if (this->getMesh()->getMeshShape() ==
+                Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  标量
             {
-                // 对于二维openfoam网格，需要寻找z坐标均大于0的顶点
-                const std::vector<ULL>& faceIndexes = cells[cellIndex].getFaceIndexes();
-                const std::vector<Face>& faces = mesh->getFaces();
-                for (ULL faceIndex : faceIndexes)
+                ofs << ",ET=triangle" << std::endl;     // 挖坑
+                // 先输出所有的x，y，z
+                for (const Point& point : mesh->getPoints())
                 {
-                    const Face& face = faces[faceIndex];
-                    if (face.getCenter().z() > EPSILON) // 找到>0的界面
+                    ofs << point.x() << " ";
+                }
+                ofs << "\n";
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.y() << " ";
+                }
+                ofs << "\n";
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.z() << " ";
+                }
+                ofs << "\n";
+
+                // 输出每个cell的场值
+                for (ULL i = 0; i < mesh->getCellNumber(); ++i)
+                {
+                    ofs << this->cellField_[i] << " ";
+                }
+                ofs << "\n";
+
+
+                // 输出每个cell的点索引
+                for (const Cell& cell : mesh->getCells())
+                {
+                    for (const ULL index : cell.getPointIndexes())
                     {
-                        // 输出点的坐标和当前cell场的值
-                        const std::vector<ULL>& pointIndexes = face.getPointIndexes();
-                        for (ULL pointIndex : pointIndexes)
-                        {
-                            const Vector<Scalar>& point = mesh->getPoints()[pointIndex];
-                            ofs << point.x() << " " << point.y() << " " << this->getCellField()[cellIndex] << std::endl;
-                        }
+                        ofs << index << " ";
                     }
+                    ofs << "\n";
                 }
             }
+            else if (this->getMesh()->getMeshShape() ==
+                Mesh::MeshShape::QUADRILATERAL) // 二维四边形网格  标量
+            {
+                ofs << ",ET=quadrilateral" << std::endl;
+                // 先输出所有的x，y，z
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.x() << " ";
+                }
+                ofs << "\n";
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.y() << " ";
+                }
+                ofs << "\n";
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.z() << " ";
+                }
+                ofs << "\n";
+
+                // 输出每个cell的场值
+                for (ULL i = 0; i < mesh->getCellNumber(); ++i)
+                {
+                    ofs << this->cellField_0_[i] << " ";
+                }
+                ofs << "\n";
+
+
+                // 输出每个cell的点索引
+                for (const Cell& cell : mesh->getCells())
+                {
+                    for (const ULL index : cell.getPointIndexes())
+                    {
+                        ofs << index << " ";
+                    }
+                    ofs << "\n";
+                }
+            }
+
+
         }
-        else if (std::is_same_v<Tp, Vector<Scalar>>)    // 矢量场
+        else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)    // 矢量场
         {
             std::cout << "Writing vector field to Tecplot file..." << std::endl;
             ofs << R"(VARIABLES="X","Y","U","V")" << std::endl;
+            ofs << "ZONE T=\"" << name_ << "\",n=" << (mesh->getPointNumber()) / 2 << ",e=" << mesh->getCellNumber() << ",f=feblock";
+
+            if (this->getMesh()->getMeshShape() ==
+                Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  矢量
+            {
+                ofs << ",et=triangle" << std::endl;
+
+            }
+            else if (this->getMesh()->getMeshShape() ==
+                Mesh::MeshShape::QUADRILATERAL) // 二维四边形网格  矢量
+            {
+                ofs << ",et=quadrilateral" << std::endl;
+
+            }
+
+
         }
     }
 }

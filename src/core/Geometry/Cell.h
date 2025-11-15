@@ -25,6 +25,7 @@ public:
 public:
     // 获取单元的面索引列表
     const std::vector<ULL>& getFaceIndexes() const;
+    const std::vector<ULL>& getPointIndexes() const;
     // 获取体积
     Scalar getVolume() const;
     // 获取单元中心
@@ -63,6 +64,7 @@ private:
 private:
     ULL id;                             // 单元ID
     std::vector<ULL> faceIndexes_;      // 面的索引
+    std::vector<ULL> pointIndexes_;     // 点的索引
     Scalar volume_;                     // 单元体积
     Vector<Scalar> center_;             // 单元中心
 };

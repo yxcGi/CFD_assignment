@@ -11,6 +11,11 @@ const std::vector<Cell::ULL>& Cell::getFaceIndexes() const
     return faceIndexes_;
 }
 
+const std::vector<Cell::ULL>& Cell::getPointIndexes() const
+{
+    return pointIndexes_;
+}
+
 Scalar Cell::getVolume() const
 {
     return volume_;
@@ -64,6 +69,13 @@ void Cell::calculateCellInfo(
         Point bottomCenter = (B + C + D) / 3.0;     // 底面三角形形心
         // 四面体形心在底面形心与顶点的1/4处
         center_ = 0.75 * bottomCenter + 0.25 * A;
+
+        // 将点索引移动至pointIndexes_
+        pointIndexes_.assign(
+            std::make_move_iterator(points_vec.begin()),
+            std::make_move_iterator(points_vec.end())
+        );
+
         return;
     }
     else if (faceIndexes_.size() > 4)   // 多面体
@@ -73,9 +85,9 @@ void Cell::calculateCellInfo(
 
         // 计算Cell中心（体心）
         Point volumeCenter(0.0, 0.0, 0.0);      // 体心（非形心）
-        for (const Face& face : faces)      // 获取所有点
+        for (const ULL faceIndex : faceIndexes_)      // 获取所有点
         {
-            for (ULL pointIndex : face.getPointIndexes())
+            for (ULL pointIndex : faces[faceIndex].getPointIndexes())
             {
                 points_set.emplace(pointIndex);
             }
@@ -87,8 +99,9 @@ void Cell::calculateCellInfo(
         volumeCenter /= points_set.size();      // 计算体心
 
 
-        for (const Face& face : faces)
+        for (const ULL faceIndex : faceIndexes_)
         {
+            const Face& face = faces[faceIndex];
             Point faceCenter = face.getCenter();
             Point thisCenter = 0.75 * faceCenter + 0.25 * volumeCenter; // 本锥体形心
 
@@ -100,6 +113,12 @@ void Cell::calculateCellInfo(
         }
         volume_ = allVolume;
         center_ = weightedCenter / allVolume;
+        // 将点索引移动至pointIndexes_，采用移动语义
+        pointIndexes_.assign(
+            points_set.begin(),
+            points_set.end()
+        );
+
         return;
     }
     std::cerr << "Error: cell has less than 4 faces" << std::endl;
