@@ -23,10 +23,19 @@ class Mesh
     using ULL = unsigned long long;
     using Scalar = double;
 public:
+    // 网格维度
     enum class Dimension
     {
         TWO_D,
         THREE_D
+    };
+    // 网格形状（tecplot里的非结构网格类型）
+    enum class MeshShape
+    {
+        TRIANGLE,   // 三角形单元
+        QUADRILATERAL,  // 四边形单元
+        TETRAHEDRON,   // 四面体单元
+        BRICK,      // 六面体单元
     };
 
 public:
@@ -55,9 +64,11 @@ public:
     ULL getFaceNumber() const;
     ULL getPointNumber() const;
     Dimension getDimension() const;
+    MeshShape getMeshShape() const;
 
     ULL getInternalCellNumber() const;
     ULL getBoundaryFaceNumber() const;
+    const std::pair<ULL, ULL>& getEmptyFaceIndexesPair() const;
 
     const std::unordered_map<std::string, BoundaryPatch>&
         getBoundaryPatches() const;
@@ -87,6 +98,7 @@ private:
 
     void buildCellsFromFaces();
     BoundaryPatch::BoundaryType stringToType(const std::string& name) const;
+    void setMeshShape();
     void calculateMeshInfo();
 
 
@@ -101,9 +113,11 @@ private:
     std::unordered_set<ULL> internalCellIndexes_;                                 // 内部单元索引列表
     std::unordered_set<ULL> boundaryCellIndexes_;                                 // 边界面索引列表
     std::unordered_map<std::string, BoundaryPatch> boundaryPatches_;     // 边界条件映射
+    std::pair<ULL, ULL> emptyFaceIndexesPair_;                              // empty边界面的起止索引（二维专属，左闭右开）
     bool isValid_;                                                          // 网格是否有效
     std::string meshPath_;                                                  // 网格路径
-    Dimension dimension_;                                                   // 网格维度
+    Dimension dimension_;                                                   // 网格维度，默认三维
+    MeshShape meshShape_;
 };
 
 

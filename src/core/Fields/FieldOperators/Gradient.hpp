@@ -24,7 +24,7 @@ template <typename Tp>
 inline auto grad(
     const Field<Tp>& field,
     GradientMethod method = GradientMethod::GAUSS_GREEN
-) -> CellField<decltype(Tp() * Vector<Scalar>())>
+) -> CellField<decltype(Tp()* Vector<Scalar>())>
 {
     using ULL = unsigned long long;
     if (!field.getFaceField().isValid())        // 场必须有效
@@ -49,6 +49,12 @@ inline auto grad(
             decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
             for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
             {
+                // 跳过empty面
+                if (j >= field.getMesh()->getEmptyFaceIndexesPair().first &&
+                    j < field.getMesh()->getEmptyFaceIndexesPair().second)
+                {
+                    continue;
+                }
                 const Face& face = faces[j];
                 Vector<Scalar> Sf = face.getArea() * face.getNormal();
                 Tp phi = currentFaceField[j];

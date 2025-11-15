@@ -37,6 +37,9 @@ void Mesh::readMesh(const std::string& path)
     readBoundaryPatch(Mesh_boundary);
     readFaces(Mesh_faces, Mesh_owner, Mesh_neighbour);
     buildCellsFromFaces();     // 建立网格拓扑关系
+
+    setMeshShape();
+
     calculateMeshInfo();       // 计算网格信息
     isValid_ = true;
 
@@ -143,6 +146,11 @@ Mesh::Dimension Mesh::getDimension() const
     return dimension_;
 }
 
+Mesh::MeshShape Mesh::getMeshShape() const
+{
+    return meshShape_;
+}
+
 ULL Mesh::getInternalCellNumber() const
 {
     if (!isValid_)
@@ -166,6 +174,16 @@ ULL Mesh::getBoundaryFaceNumber() const
         count += patch.getNFace();
     }
     return count;
+}
+
+const std::pair<ULL, ULL>& Mesh::getEmptyFaceIndexesPair() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Mesh is invalid, cannot return empty face indexes pair." << std::endl;
+        throw std::runtime_error("Invalid mesh empty face indexes pair error");
+    }
+    return emptyFaceIndexesPair_;
 }
 
 const std::unordered_map<std::string, BoundaryPatch>& Mesh::getBoundaryPatches() const
@@ -337,39 +355,41 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
         // 添加至boundaryPatch_ map中
         BoundaryPatch patch(boundaryName, nFaces, startFace, type);
         boundaryPatches_.emplace(boundaryName, std::move(patch));
-
-        // 通过是否有empty来判断网格的维度，存在empty则为二维网格
-        for (const auto& [name, bP] : boundaryPatches_)
-        {
-            if (bP.getType() == BoundaryPatch::BoundaryType::EMPTY)
-            {
-                dimension_ = Mesh::Dimension::TWO_D;
-            }
-        }
-
-
-        
-        
-
-        /* 测试用 */
-        // std::cout << "Boundary Patch " << i + 1 << ": " << std::endl;
-        // std::cout << "  Name: " << boundaryName << std::endl;
-        // std::cout << "  Type: " << static_cast<int>(type) << std::endl;
-        // std::cout << "  nFaces: " << nFaces << std::endl;
-        // std::cout << "  startFace: " << startFace << std::endl;
-        // getchar();
-
     }
-    // 测试用
-    // for (const auto& [name, patch] : boundaryPatch_)
-    // {
-    //     std::cout << "Boundary Patch Name: " << name << std::endl;
-    //     std::cout << "  Type: " << static_cast<int>(patch.getType()) << std::endl;
-    //     std::cout << "  nFaces: " << patch.getNFace() << std::endl;
-    //     std::cout << "  startFace: " << patch.getStartFace() << std::endl;
-    // }
+
+    // 通过是否有empty来判断网格的维度，存在empty则为二维网格
+    for (const auto& [name, bP] : boundaryPatches_)
+    {
+        if (bP.getType() == BoundaryPatch::BoundaryType::EMPTY)
+        {
+            // 设置为二维
+            dimension_ = Mesh::Dimension::TWO_D;
+            // 设置empty的起止索引(左闭右开)
+            emptyFaceIndexesPair_ = std::make_pair(bP.getStartFace(), bP.getStartFace() + bP.getNFace());
+        }
+    }
+
+    
+
+    /* 测试用 */
+    // std::cout << "Boundary Patch " << i + 1 << ": " << std::endl;
+    // std::cout << "  Name: " << boundaryName << std::endl;
+    // std::cout << "  Type: " << static_cast<int>(type) << std::endl;
+    // std::cout << "  nFaces: " << nFaces << std::endl;
+    // std::cout << "  startFace: " << startFace << std::endl;
     // getchar();
+
 }
+// 测试用
+// for (const auto& [name, patch] : boundaryPatch_)
+// {
+//     std::cout << "Boundary Patch Name: " << name << std::endl;
+//     std::cout << "  Type: " << static_cast<int>(patch.getType()) << std::endl;
+//     std::cout << "  nFaces: " << patch.getNFace() << std::endl;
+//     std::cout << "  startFace: " << patch.getStartFace() << std::endl;
+// }
+// getchar();
+// }
 
 void Mesh::readFaces(const std::string& facesPath, const std::string& ownerPath, const std::string& neighbourPath)
 {
@@ -865,6 +885,54 @@ BoundaryPatch::BoundaryType Mesh::stringToType(const std::string& name) const
     throw std::invalid_argument("Unknown boundary type: " + name);
 }
 
+void Mesh::setMeshShape()
+{
+    // 知道维度了，判断网格形状
+    if (dimension_ == Dimension::TWO_D)
+    {
+        // 取第一个单元用总点数除以2就可以得到形状
+        // std::unordered_set<ULL> points;
+        // for (ULL faceIndex : cells_[0].getFaceIndexes())
+        // {
+        //     const std::vector<ULL>& pointIndexes = faces_[faceIndex].getPointIndexes();
+        //     points.insert(pointIndexes.begin(), pointIndexes.end());
+        // }
+        int faceNum = cells_[0].getFaceIndexes().size();
+        if (faceNum == 5)     // 三角形
+        {
+            meshShape_ = MeshShape::TRIANGLE;
+        }
+        else if (faceNum == 6)    // 四边形
+        {
+            meshShape_ = MeshShape::QUADRILATERAL;
+        }
+        else
+        {
+            std::cerr << "The 2D mesh face number is " << faceNum << std::endl;
+            std::cerr << "Error: Unknown mesh shape" << std::endl;
+            throw std::runtime_error("Unknown mesh shape");
+        }
+    }
+    else if (dimension_ == Dimension::THREE_D)
+    {
+        int faceNum = cells_[0].getFaceIndexes().size();
+        if (faceNum == 4)   // 四面体
+        {
+            meshShape_ = MeshShape::TETRAHEDRON;
+        }
+        else if (faceNum == 6)
+        {
+            meshShape_ = MeshShape::BRICK;
+        }
+        else
+        {
+            std::cerr << "The 3D mesh face number is " << faceNum << std::endl;
+            std::cerr << "Error: Unknown mesh shape" << std::endl;
+            throw std::runtime_error("Unknown mesh shape");
+        }
+    }
+}
+
 void Mesh::calculateMeshInfo()
 {
     // 计算面信息
@@ -892,7 +960,7 @@ void Mesh::calculateMeshInfo()
 
         if ((face.getNormal() & ownerToFace) < 0)
         {
-            
+
             // if (!yesFlag)        // 测试用
             // {
             //     std::cout << "face_id:" << face.getCenter() << std::endl;
