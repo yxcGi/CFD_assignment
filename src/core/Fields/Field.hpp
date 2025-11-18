@@ -98,7 +98,7 @@ private:
     // CellField<typename GradientType<Tp>::Type> cellGradientField_; // 单元场梯度
     // CellField<decltype(Tp()* Vector<Scalar>())> cellGradientField_; // 单元场梯度
     std::string name_;
-    GradientMethod gradientMethod_{ GradientMethod::GAUSS_GREEN };
+    GradientMethod gradientMethod_{ GradientMethod::GAUSS_GREEN };      // 梯度计算方法
     std::unordered_map<std::string, BoundaryCondition<Tp>> boundaryConditions_;
     Interpolation<Tp> interpolator_;     // 插值函数对象
 };
@@ -181,7 +181,10 @@ inline bool Field<Tp>::isBoundaryConditionValid() const
         boundaryConditions_.begin(),
         boundaryConditions_.end(),
         [](const std::pair<std::string, BoundaryCondition<Tp>>& bc) {
-            return bc.second.isValid();
+            return (
+                bc.second.isValid() ||
+                bc.second.getType() == BoundaryPatch::BoundaryType::EMPTY
+                );
         }
     );
 }
@@ -310,7 +313,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     // 判断是否存在该边界
     using It = typename std::unordered_map<std::string, BoundaryCondition<Tp>>::iterator;
     It it = boundaryConditions_.find(name);
-    if (it == boundaryConditions_.end())
+    if (it == boundaryConditions_.end())    // 没找到该边界
     {
         std::cerr << "Boundary condition " << name << " does not exist!" << std::endl;
         throw std::runtime_error("Boundary condition does not exist!");
@@ -359,17 +362,17 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
         std::ofstream ofs(fileName, std::ios::trunc);
         if (!ofs.is_open())
         {
-            std::cerr << "writToTecplot() Error: Unable to open file " << fileName << " for writing." << std::endl;
+            std::cerr << "writToTecplot() Error: Unable to open file " << fileName << " for writing.\n";
             throw std::runtime_error(fileName + " file open error");
         }
 
         // 写入头信息
-        ofs << "Title=" << "\"" << this->getName() << "_2D_Tecplot\"" << std::endl;
+        ofs << "Title=" << "\"" << this->getName() << "_2D_Tecplot\"\n";
         if constexpr (std::is_same_v<Tp, Scalar>)       // 标量场
         {
-            std::cout << "Writing scalar field to Tecplot file..." << std::endl;
-            ofs << R"(VARIABLES="X","Y",")" << name_ << "\"" << std::endl;
-            ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber() << ",F=FECENTER";
+            std::cout << "Writing scalar field to Tecplot file...\n";
+            ofs << R"(VARIABLES="X","Y",")" << name_ << "\"\n";
+            ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber();   // 进入分支接着输出
 
             if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  标量
@@ -413,38 +416,40 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
             else if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::QUADRILATERAL) // 二维四边形网格  标量
             {
-                ofs << ",ET=quadrilateral" << std::endl;
-                // 先输出所有的x，y，z
-                for (const Point& point : mesh->getPoints())
-                {
-                    ofs << point.x() << " ";
-                }
-                ofs << "\n";
-                for (const Point& point : mesh->getPoints())
-                {
-                    ofs << point.y() << " ";
-                }
-                ofs << "\n";
-                for (const Point& point : mesh->getPoints())
-                {
-                    ofs << point.z() << " ";
-                }
-                ofs << "\n";
+                ofs << ",ZONETYPE=FEQUADRILATERAL\n";
+                ofs << "DATAPACKING=BLOCK\n";
+                ofs << "VARLOCATION=([1-2]=NODAL, [3]=CELLCENTERED)\n";
 
-                // 输出每个cell的场值
+                // 输出所有点的x,y坐标
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.x() << "\n";
+                }
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.y() << "\n";
+                }
+                // 输出所有单元的场值
                 for (ULL i = 0; i < mesh->getCellNumber(); ++i)
                 {
-                    ofs << this->cellField_0_[i] << " ";
+                    ofs << this->cellField_0_[i] << "\n";
                 }
-                ofs << "\n";
-
-
-                // 输出每个cell的点索引
+                // 每个二维单元由哪几个点构成
                 for (const Cell& cell : mesh->getCells())
                 {
-                    for (const ULL index : cell.getPointIndexes())
+                    ULL emptyFaceIndex = 0;     // 记录该单元的empty面的索引
+                    for (const ULL faceId : cell.getFaceIndexes())
                     {
-                        ofs << index << " ";
+                        if (faceId >= mesh->getEmptyFaceIndexesPair().first &&
+                            faceId < mesh->getEmptyFaceIndexesPair().second)
+                        {
+                            emptyFaceIndex = faceId;
+                        }
+                    }
+                    const std::vector<ULL>& emptyFacePointIndexes = mesh->getFaces()[emptyFaceIndex].getPointIndexes();
+                    for (const ULL pointId : emptyFacePointIndexes)
+                    {
+                        ofs << pointId + 1 << " ";      // tecplot索引从1开始
                     }
                     ofs << "\n";
                 }

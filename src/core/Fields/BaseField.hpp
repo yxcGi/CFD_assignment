@@ -152,13 +152,41 @@ inline void BaseField<Tp>::setValue(ULL id, const Tp& value)
 template<typename Tp>
 inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func)
 {
-    if (!isValid_)
+    if (isValid_)
     {
-        std::cerr << "Error: Field is not valid!" << std::endl;
-        throw std::runtime_error("Field is not valid!");
+        if (type_ == field::FieldType::CELL_FIELD)
+        {
+            for (ULL i = 0; i < data_.size(); ++i)
+            {
+                const Point& cellCenter = mesh_->getCells()[i].getCenter();
+                data_[i] = func(cellCenter.x(), cellCenter.y(), cellCenter.z());
+            }
+        }
+        else if (type_ == field::FieldType::FACE_FIELD)
+        {
+            for (ULL i = 0; i < data_.size(); ++i)
+            {
+                const Point& faceCenter = mesh_->getFaces()[i].getCenter();
+
+                data_[i] = func(faceCenter.x(), faceCenter.y(), faceCenter.z());
+            }
+        }
+        else if (type_ == field::FieldType::NODE_FIELD)
+        {
+            for (ULL i = 0; i < data_.size(); ++i)
+            {
+                const Point& node = mesh_->getPoints()[i];
+                data_[i] = func(node.x(), node.y(), node.z());
+            }
+        }
+        else if (type_ == field::FieldType::BASE)
+        {
+            std::cerr << "Error: Field type is not set!" << std::endl;
+            throw std::runtime_error("Field type is not set!");
+        }
     }
 
-
+    data_.resize(getDataNumer(), Tp());
     if (type_ == field::FieldType::CELL_FIELD)
     {
         for (ULL i = 0; i < data_.size(); ++i)
@@ -189,6 +217,8 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
         std::cerr << "Error: Field type is not set!" << std::endl;
         throw std::runtime_error("Field type is not set!");
     }
+    isValid_ = true;
+   
 }
 
 template<typename Tp>
