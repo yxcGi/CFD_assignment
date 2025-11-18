@@ -40,27 +40,49 @@ inline auto grad(
     const std::vector<Face>& faces = field.getMesh()->getFaces();
     if (method == GradientMethod::GAUSS_GREEN)
     {
-        for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+        if (field.getMesh()->getDimension() == Mesh::Dimension::TWO_D)
         {
-            const Cell& cell = cells[i];
-            // 获取当前单元各个面的id
-            const std::vector<ULL>& faceIds = cell.getFaceIndexes();
-            // 定义总的phi * S_f
-            decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
-            for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
             {
-                // 跳过empty面
-                if (j >= field.getMesh()->getEmptyFaceIndexesPair().first &&
-                    j < field.getMesh()->getEmptyFaceIndexesPair().second)
+                const Cell& cell = cells[i];
+                // 获取当前单元各个面的id
+                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // 定义总的phi * S_f
+                decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
+                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
                 {
-                    continue;
+                    // 跳过empty面，如果是else if中三维网格不判断
+                    if (j >= field.getMesh()->getEmptyFaceIndexesPair().first &&
+                        j < field.getMesh()->getEmptyFaceIndexesPair().second)
+                    {
+                        continue;
+                    }
+                    const Face& face = faces[j];
+                    Vector<Scalar> Sf = face.getArea() * face.getNormal();
+                    Tp phi = currentFaceField[j];
+                    total_Phi_Sf += phi * Sf;
                 }
-                const Face& face = faces[j];
-                Vector<Scalar> Sf = face.getArea() * face.getNormal();
-                Tp phi = currentFaceField[j];
-                total_Phi_Sf += phi * Sf;
+                resultField[i] = total_Phi_Sf / cell.getVolume();
             }
-            resultField[i] = total_Phi_Sf / cell.getVolume();
+        }
+        else if (field.getMesh()->getDimension() == Mesh::Dimension::THREE_D)
+        { 
+            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+            {
+                const Cell& cell = cells[i];
+                // 获取当前单元各个面的id
+                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // 定义总的phi * S_f
+                decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
+                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+                {
+                    const Face& face = faces[j];
+                    Vector<Scalar> Sf = face.getArea() * face.getNormal();
+                    Tp phi = currentFaceField[j];
+                    total_Phi_Sf += phi * Sf;
+                }
+                resultField[i] = total_Phi_Sf / cell.getVolume();
+            }
         }
         return resultField;
     }

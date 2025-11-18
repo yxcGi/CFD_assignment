@@ -25,6 +25,7 @@ public:
     std::string getName() const;
     ULL getStartFace() const;
     ULL getNFace() const;
+    BType getType() const;
 
     Scalar get_a() const;
     Scalar get_b() const;
@@ -97,6 +98,13 @@ inline typename BoundaryCondition<Tp>::ULL BoundaryCondition<Tp>::getNFace() con
 {
     return nFace_;
 }
+
+template<typename Tp>
+inline typename BoundaryCondition<Tp>::BType BoundaryCondition<Tp>::getType() const
+{
+    return type_;
+}
+
 
 template<typename Tp>
 inline typename BoundaryCondition<Tp>::Scalar BoundaryCondition<Tp>::get_a() const
