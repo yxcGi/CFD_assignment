@@ -3,39 +3,66 @@
 #include "Geometry/Mesh.h"
 #include "Math/Tensor.hpp"
 #include <Field.hpp>
+#include "SparseMatrix.hpp"
 
 int main()
 {
     try
     {
         using Scalar = double;
-        // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+        std::vector<std::vector<Scalar>> A{
+            { 1, 0, 0, 0, 0 },
+            { 0, 0, 3, 2, 0 },
+            { 0, 2, 0, 0, 0 },
+            { 0, 0, 3, 0, 1 },
+            { 0, 9, 2, 0, 0 }
+        };
 
-        // 创建标量场
-        Field<Scalar> phi("T", &mesh);
-
-        phi.setValue(
-            [](Scalar x, Scalar y, Scalar z) {
-                return (x * x + y * y) * 200;
-            }
-        );
-
-        phi.setBoundaryCondition("inlet", 1, 0, 300);
-        phi.setBoundaryCondition("outlet", 1, 0, 300);
-        phi.setBoundaryCondition("upperWall", 1, 0, 300);
-        phi.setBoundaryCondition("lowerWall", 1, 0, 300);
-        phi.setBoundaryCondition("frontAndBack", 0, 1, 100);
-        phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
-
-        // phi.cellToFace();
-        phi.writeToFile("phi.dat");
+        SparseMatrix<Scalar> A_sparse(A);
+        A_sparse.printMatrix();
     }
-    catch (const std::exception& e)
+    catch (std::exception& e)
     {
         std::cerr << "Exception: " << e.what() << std::endl;
-        return 1;
     }
+
+
+
+
+
+
+
+
+    // try
+    // {
+    //     using Scalar = double;
+    //     // 读取网格
+    //     Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+
+    //     // 创建标量场
+    //     Field<Scalar> phi("T", &mesh);
+
+    //     phi.setValue(
+    //         [](Scalar x, Scalar y, Scalar z) {
+    //             return (x * x + y * y) * 200;
+    //         }
+    //     );
+
+    //     phi.setBoundaryCondition("inlet", 1, 0, 300);
+    //     phi.setBoundaryCondition("outlet", 1, 0, 300);
+    //     phi.setBoundaryCondition("upperWall", 1, 0, 300);
+    //     phi.setBoundaryCondition("lowerWall", 1, 0, 300);
+    //     phi.setBoundaryCondition("frontAndBack", 0, 1, 100);
+    //     phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
+
+    //     // phi.cellToFace();
+    //     phi.writeToFile("phi.dat");
+    // }
+    // catch (const std::exception& e)
+    // {
+    //     std::cerr << "Exception: " << e.what() << std::endl;
+    //     return 1;
+    // }
 
 
 
