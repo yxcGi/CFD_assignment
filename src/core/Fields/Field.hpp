@@ -171,7 +171,7 @@ inline Mesh* Field<Tp>::getMesh() const
 template<typename Tp>
 inline bool Field<Tp>::isValid() const
 {
-    return faceField_.isValid() && cellField_.isValid();
+    return faceField_.isValid() && cellField_.isValid() && cellField_0_.isValid();
 }
 
 template<typename Tp>
@@ -315,7 +315,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     It it = boundaryConditions_.find(name);
     if (it == boundaryConditions_.end())    // 没找到该边界
     {
-        std::cerr << "Boundary condition " << name << " does not exist!" << std::endl;
+        std::cerr << "Boundary condition \"" << name << "\" does not exist!" << std::endl;
         throw std::runtime_error("Boundary condition does not exist!");
     }
     it->second.setBoundaryCondition(name, a, b, c);
@@ -373,7 +373,7 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
             std::cout << "Writing scalar field to Tecplot file...\n";
             ofs << R"(VARIABLES="X","Y",")" << name_ << "\"\n";
             ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber();   // 进入分支接着输出
-
+ 
             if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  标量
             {
