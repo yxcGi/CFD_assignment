@@ -52,7 +52,6 @@ int main()
         phi.setBoundaryCondition("outlet", 1, 0, 300);
         phi.setBoundaryCondition("upperWall", 1, 0, 300);
         phi.setBoundaryCondition("lowerWall", 1, 0, 300);
-        phi.setBoundaryCondition("frontAndBack", 0, 1, 100);
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
         // phi.cellToFace();

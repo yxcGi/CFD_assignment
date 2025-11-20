@@ -310,7 +310,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
 {
     if (!isValid())
     {
-        throw std::runtime_error("Field is not valid!");
+        throw std::runtime_error("Field<Tp>::setBoundaryCondition() Error: Field is not valid!");
     }
 
     // 判断是否存在该边界
@@ -320,6 +320,11 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     {
         std::cerr << "Boundary condition \"" << name << "\" does not exist!" << std::endl;
         throw std::runtime_error("Boundary condition does not exist!");
+    }
+    if (it->second.getType() == BoundaryPatch::BoundaryType::EMPTY) // 如果是empty边界，则不需要设置边界条件
+    {
+        std::cerr << "The BoundaryType of this boundary is EMPTY!" << std::endl;
+        throw std::runtime_error("The BoundaryType of this boundary is EMPTY!");
     }
     it->second.setBoundaryCondition(name, a, b, c);
     it->second.setValid();      // 设置该边界条件有效
