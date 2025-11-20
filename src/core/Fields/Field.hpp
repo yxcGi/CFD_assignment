@@ -132,7 +132,7 @@ inline void Field<Tp>::setValue(const Tp& value)
     cellField_0_.setValue(value);
 
     // 利用面值计算单元中心梯度
-    cellGradientField_ = grad( gradientMethod_);
+    // cellGradientField_ = grad( gradientMethod_);
 }
 
 template<typename Tp>
@@ -143,7 +143,7 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
     cellField_0_.setValue(func);
 
     // 利用面值计算单元中心梯度
-    cellGradientField_ = grad(gradientMethod_);
+    // cellGradientField_ = grad(gradientMethod_);
 }
 
 
@@ -197,12 +197,12 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 {
     if (!isValid())
     {
-        std::cerr << "Field is not valid!" << std::endl;
+        std::cerr << "Field<Tp>::cellToFace(interpolation::Scheme scheme) Error: Field is not valid!" << std::endl;
         throw std::runtime_error("Field is not valid!");
     }
     if (!isBoundaryConditionValid())
     {
-        std::cerr << "Boundary condition is not valid!" << std::endl;
+        std::cerr << "Field<Tp>::cellToFace(interpolation::Scheme scheme) Error: Boundary condition is not valid!" << std::endl;
         throw std::runtime_error("Boundary condition is not valid!");
     }
 
@@ -247,22 +247,18 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         faceField_.setValue(internalFaceIndex, faceValue);
     }
 
-    // 计算当前每个cell的梯度值，采用Gauss-Green方法
-
-
 
     // 再遍历边界面，需考虑边界条件
     for (const auto& [name, bc] : cellField_0_.getBoundaryConditions())
     {
-        ULL nFace = bc.getNFace();
-        ULL startFace = bc.getStartFace();
-
         if (bc.getType() ==
             BoundaryPatch::BoundaryType::EMPTY) // 不需要处理empty边界
         {
             continue;
         }
 
+        ULL nFace = bc.getNFace();
+        ULL startFace = bc.getStartFace();
 
         // 处理当前边界的所有面
         for (ULL boundaryFaceIndex = startFace;
@@ -285,7 +281,6 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             Scalar a = bc.get_a();
             Scalar b = bc.get_b();
             const Tp& c = bc.get_c();
-            // const auto& gradientCell =       // 计算梯度，挖坑
 
 
             // 计算c1, c2
@@ -328,6 +323,65 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
     }
     it->second.setBoundaryCondition(name, a, b, c);
     it->second.setValid();      // 设置该边界条件有效
+
+    // 检查边界条件是否全部设置完全，完全设置完后则需要对边界进行赋值（首次赋值默认单元梯度为0）
+    if (isBoundaryConditionValid())
+    {
+        std::cout << "All boundary conditions are set!" << std::endl;
+
+        // 开始对各个边界面进行赋值
+        Mesh* mesh = getMesh();
+        const std::vector<Face>& faces = mesh->getFaces();
+        const std::vector<Cell>& cells = mesh->getCells();
+        const CellField<Tp>& cellField = getCellField();
+        for (const auto& [name, bc] : boundaryConditions_)
+        {
+            if (bc.getType() ==
+                BoundaryPatch::BoundaryType::EMPTY) // 不需要处理empty边界
+            {
+                continue;
+            }
+            
+            // 获取nFace和startFace
+            ULL nFace = bc.getNFace();
+            ULL startFace = bc.getStartFace();
+
+ 
+            // 设置当前边界所有面的值
+            for (ULL boundaryFaceIndex = startFace;
+                boundaryFaceIndex < startFace + nFace;
+                ++boundaryFaceIndex)
+            {
+                const Face& face = faces[boundaryFaceIndex];
+                ULL ownerIndex = face.getOwnerIndex();
+                const Cell& ownerCell = cells[ownerIndex];
+                const Vector<Tp>& faceCenter = face.getCenter();
+                const Vector<Tp>& ownerCenter = ownerCell.getCenter();
+                const Vector<Scalar>& normal = face.getNormal();    // 面法向量
+                Vector<Scalar> V_CB = faceCenter - ownerCenter;
+
+                // 计算中间量
+                Vector<Scalar> E = V_CB / (V_CB & normal);
+                Vector<Scalar> T = normal - E;
+                Scalar E_magnitude = E.magnitude();
+                Scalar distance_CB = ownerCenter.getDistance(faceCenter);
+                Scalar a = bc.get_a();
+                Scalar b = bc.get_b();
+                const Tp& c = bc.get_c();
+
+                // 计算c1, c2
+                Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
+                Tp c2 = c * distance_CB / (a * distance_CB + b * E_magnitude);  // 此处c2没有用到ownerCell梯度（梯度=0）
+
+                // 计算边界面的值
+                Tp boundaryFaceValue = c1 * cellField[ownerIndex] + c2;
+                faceField_.setValue(boundaryFaceIndex, boundaryFaceValue);
+            }
+        }
+    }
+
+    // 对边界赋值完后，首次设置单元梯度值
+    cellGradientField_ = grad(gradientMethod_);
 }
 
 template<typename Tp>
