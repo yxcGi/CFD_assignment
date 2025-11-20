@@ -5,8 +5,9 @@ get_filename_component(PRJ_NAME ${CMAKE_SOURCE_DIR} NAME)
 
 project(${PRJ_NAME}
     VERSION 1.0.0
-    DESCRIPTION "The SIMPLE arithmetic to solver a lid lid driven cavity flow"
+    DESCRIPTION "CFD solver based on the finite volume method"
     LANGUAGES CXX
+    HOMEPAGE_URL "https://github.com/yxcGi/CFD_assignment.git"
 )
 
 set(CMAKE_CXX_STANDARD 17)

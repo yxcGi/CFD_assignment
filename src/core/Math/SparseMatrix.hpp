@@ -20,6 +20,8 @@ public:
 public:
     // 打印
     void printMatrix() const;
+    // 设置矩阵大小
+    void setSize(ULL size);
     // 设置系数矩阵i, j元素值
     void setElement(ULL i, ULL j, Tp value);
 
@@ -28,6 +30,7 @@ private:
     std::vector<ULL> colIndex_;     // 每个元素列索引, 与values一一对应
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
+    bool isValid_{ false };         // 是否有效
 };
 
 template<typename Tp>
@@ -66,6 +69,7 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
         // 每行结束后记录下一行的起始值
         rowPointer_.push_back(colIndex_.size());
     }
+    isValid_ = true;
 }
 
 template<typename Tp>
@@ -103,4 +107,16 @@ inline void SparseMatrix<Tp>::printMatrix() const
         }
         std::cout << "\n";
     }
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setSize(ULL size)
+{
+    if (isValid_)   // 如果已经有效，则不能再设置
+    {
+        std::cerr << "SparseMatrix<Tp>::setSize(ULL size) Error: matrix is valid" << std::endl;
+        throw std::invalid_argument("matrix is valid");
+    }
+    size_ = size;
+    isValid_ = true;
 }

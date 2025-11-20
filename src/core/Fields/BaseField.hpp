@@ -184,9 +184,11 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
             std::cerr << "Error: Field type is not set!" << std::endl;
             throw std::runtime_error("Field type is not set!");
         }
+        return;
     }
 
     data_.resize(getDataNumer(), Tp());
+    isValid_ = true;
     if (type_ == field::FieldType::CELL_FIELD)
     {
         for (ULL i = 0; i < data_.size(); ++i)
@@ -217,7 +219,6 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
         std::cerr << "Error: Field type is not set!" << std::endl;
         throw std::runtime_error("Field type is not set!");
     }
-    isValid_ = true;
    
 }
 
@@ -258,7 +259,7 @@ inline Tp& BaseField<Tp>::operator[](ULL i)
     {
         return data_[i];
     }
-    std::cerr << "Error: Field is not valid!" << std::endl;
+    std::cerr << "Tp& BaseField<Tp>::operator[](ULL i) Error: Field is not valid!" << std::endl;
     throw std::runtime_error("Field is not valid!");
 }
 
@@ -269,7 +270,7 @@ inline const Tp& BaseField<Tp>::operator[](ULL i) const
     {
         return data_[i];
     }
-    std::cerr << "Error: Field is not valid!" << std::endl;
+    std::cerr << "const Tp& BaseField<Tp>::operator[](ULL i) const Error: Field is not valid!" << std::endl;
     throw std::runtime_error("Field is not valid!");
 }
 
