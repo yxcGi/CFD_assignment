@@ -88,6 +88,9 @@ private:
     // 私有接口
     void writToTecplot(const std::string& fileName, Mesh::Dimension dim) const;     // 输出成tecplot文件
 
+    // 计算梯度
+    auto grad(GradientMethod method) -> CellField<decltype(Tp()* Vector<Scalar>())>;
+
 
 
 private:
@@ -129,7 +132,7 @@ inline void Field<Tp>::setValue(const Tp& value)
     cellField_0_.setValue(value);
 
     // 利用面值计算单元中心梯度
-    cellGradientField_ = grad(*this, gradientMethod_);
+    cellGradientField_ = grad( gradientMethod_);
 }
 
 template<typename Tp>
@@ -140,7 +143,7 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
     cellField_0_.setValue(func);
 
     // 利用面值计算单元中心梯度
-    cellGradientField_ = grad(*this, gradientMethod_);
+    cellGradientField_ = grad(gradientMethod_);
 }
 
 
@@ -244,6 +247,10 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         faceField_.setValue(internalFaceIndex, faceValue);
     }
 
+    // 计算当前每个cell的梯度值，采用Gauss-Green方法
+
+
+
     // 再遍历边界面，需考虑边界条件
     for (const auto& [name, bc] : cellField_0_.getBoundaryConditions())
     {
@@ -257,6 +264,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         }
 
 
+        // 处理当前边界的所有面
         for (ULL boundaryFaceIndex = startFace;
             boundaryFaceIndex < startFace + nFace;
             ++boundaryFaceIndex)
@@ -293,7 +301,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         }
     }
     // 利用新的面值记录计算本时间步的梯度，用于下一时间步的边界面值计算
-    cellGradientField_ = grad(*this);
+    cellGradientField_ = grad(gradientMethod_);
 }
 
 template<typename Tp>
@@ -373,7 +381,7 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
             std::cout << "Writing scalar field to Tecplot file...\n";
             ofs << R"(VARIABLES="X","Y",")" << name_ << "\"\n";
             ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber();   // 进入分支接着输出
- 
+
             if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  标量
             {
@@ -479,4 +487,72 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
 
         }
     }
+}
+
+template<typename Tp>
+inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* Vector<Scalar>())>
+{
+    using ULL = unsigned long long;
+    if (!getFaceField().isValid() && !isBoundaryConditionValid())
+    {
+        std::cerr << "Field::grad() Error: Field is not valid." << std::endl;
+        throw std::runtime_error("Field is not valid");
+    }
+    CellField<decltype(Tp()* Vector<Scalar>())> resultField(getName(), getMesh());
+    resultField.setValue(decltype(Tp() * Vector<Scalar>()){});  // 对齐初始化（设置为有效）
+    const FaceField<Tp>& currentFaceField = getFaceField();
+    const std::vector<Cell>& cells = getMesh()->getCells();
+    const std::vector<Face>& faces = getMesh()->getFaces();
+    if (method == GradientMethod::GAUSS_GREEN)
+    {
+        if (getMesh()->getDimension() == Mesh::Dimension::TWO_D)
+        {
+            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+            {
+                const Cell& cell = cells[i];
+                // 获取当前单元各个面的id
+                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // 定义总的phi * S_f
+                decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
+                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+                {
+                    // 跳过empty面，如果是else if中三维网格不判断
+                    if (j >= getMesh()->getEmptyFaceIndexesPair().first &&
+                        j < getMesh()->getEmptyFaceIndexesPair().second)
+                    {
+                        continue;
+                    }
+                    const Face& face = faces[j];
+                    Vector<Scalar> Sf = face.getArea() * face.getNormal();
+                    Tp phi = currentFaceField[j];
+                    total_Phi_Sf += phi * Sf;
+                }
+                resultField[i] = total_Phi_Sf / cell.getVolume();
+            }
+        }
+        else if (getMesh()->getDimension() == Mesh::Dimension::THREE_D)
+        {
+            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+            {
+                const Cell& cell = cells[i];
+                // 获取当前单元各个面的id
+                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // 定义总的phi * S_f
+                decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
+                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+                {
+                    const Face& face = faces[j];
+                    Vector<Scalar> Sf = face.getArea() * face.getNormal();
+                    Tp phi = currentFaceField[j];
+                    total_Phi_Sf += phi * Sf;
+                }
+                resultField[i] = total_Phi_Sf / cell.getVolume();
+            }
+        }
+        return resultField;
+    }
+    // else if (method == GradientMethod::LEAST_SQUARES)     // 挖坑
+    // {
+    // }
+    return resultField;
 }
