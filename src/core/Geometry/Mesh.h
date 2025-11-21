@@ -39,7 +39,7 @@ public:
     };
 
 public:
-    Mesh();
+    Mesh() = delete;
     Mesh(const std::string& path);
     Mesh(const Mesh&) = delete;
     Mesh(Mesh&&) noexcept = default;
@@ -75,6 +75,8 @@ public:
 
     // 用于获取不同类型场的数量的统一接口
     ULL getNumber(field::FieldType type) const;
+
+    bool isValid() const;
 
 
 
