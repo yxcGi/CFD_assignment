@@ -14,8 +14,7 @@
 using ULL = unsigned long long;
 using LL = long long;
 
-Mesh::Mesh() : isValid_(false)
-{}
+
 
 Mesh::Mesh(const std::string& path)
     : isValid_(false)
@@ -225,6 +224,11 @@ ULL Mesh::getNumber(field::FieldType type) const
     }
     std::cerr << "Unknown field type." << std::endl;
     throw std::runtime_error("Unknown field type");
+}
+
+bool Mesh::isValid() const
+{
+    return isValid_;
 }
 
 void Mesh::readPoints(const std::string& pointsPath)

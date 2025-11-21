@@ -4,35 +4,55 @@
 #include "Math/Tensor.hpp"
 #include <Field.hpp>
 #include "SparseMatrix.hpp"
+#include <cmath>
 
+
+using Scalar = double;
 int main()
 {
-    // try
-    // {
-    //     using Scalar = double;
-    //     std::vector<std::vector<Scalar>> A{
-    //         { 1, 0, 0, 0, 0 },
-    //         { 0, 0, 3, 2, 0 },
-    //         { 0, 2, 0, 0, 0 },
-    //         { 0, 0, 3, 0, 1 },
-    //         { 0, 9, 2, 0, 0 }
-    //     };
 
-    //     SparseMatrix<Scalar> A_sparse(A);
-    //     A_sparse.printMatrix();
-    // }
-    // catch (std::exception& e)
-    // {
-    //     std::cerr << "Exception: " << e.what() << std::endl;
-    // }
+#if 1
+    try
+    {
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+
+        SparseMatrix<Scalar> A_b(&mesh);
+
+        
+
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+#endif
 
 
 
 
 
+#if 0
+    try
+    {
+        using Scalar = double;
+        std::vector<std::vector<Scalar>> A{
+            { 1, 0, 0, 0, 0 },
+            { 0, 0, 3, 2, 0 },
+            { 0, 2, 0, 0, 0 },
+            { 0, 0, 3, 0, 1 },
+            { 0, 9, 2, 0, 0 }
+        };
 
+        SparseMatrix<Scalar> A_sparse(A);
+        A_sparse.printMatrix();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+#endif
 
-
+#if 0
     try
     {
         using Scalar = double;
@@ -44,7 +64,7 @@ int main()
 
         phi.setValue(
             [](Scalar x, Scalar y, Scalar z) {
-                return (x * x + y * y) * 200;
+                return std::sin(200 * x * x) * 200;
             }
         );
 
@@ -52,6 +72,7 @@ int main()
         phi.setBoundaryCondition("outlet", 1, 0, 300);
         phi.setBoundaryCondition("upperWall", 1, 0, 300);
         phi.setBoundaryCondition("lowerWall", 1, 0, 300);
+        // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
         // phi.cellToFace();
@@ -62,6 +83,7 @@ int main()
         std::cerr << "Exception: " << e.what() << std::endl;
         return 1;
     }
+#endif 
 
 
 
