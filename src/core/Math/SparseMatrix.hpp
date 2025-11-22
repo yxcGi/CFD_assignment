@@ -14,6 +14,9 @@ class SparseMatrix
 {
     using ULL = unsigned long long;
     constexpr static double EPSILON = 1e-10;
+    inline static int WIDTH = 10;       // 输出宽度 
+    // 设置小数位数
+    inline static int PRECISION = 4;    // 保留小数位数
 public:
     SparseMatrix() = default;
     SparseMatrix(ULL size);
@@ -21,12 +24,18 @@ public:
     SparseMatrix(const Mesh* mesh);     // 通过读取网格信息初始化
 
 public:
+    // 设置输出宽度
+    static void setWidth(int width);
+    // 设置小数保留位数
+    static void setPrecision(int precision);
+
+public:
     // 打印
     void printMatrix() const;
     // 设置矩阵大小
     void setSize(ULL size);
     // 设置系数矩阵i, j元素值
-    void setElement(ULL i, ULL j, Tp value);
+    void setValue(ULL i, ULL j, Tp value);
 
 private:
     std::vector<Tp> values_;        // 存储数据（行优先），大小为矩阵非0元素个数
@@ -34,6 +43,7 @@ private:
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
     bool isValid_{ false };         // 是否有效
+    bool allZero_{ true };          // 是否为全0
 };
 
 template<typename Tp>
@@ -46,7 +56,6 @@ template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix)
     : size_(matrix.size())
 {
-    rowPointer_.reserve(size_ + 1);
 
     // 判断是否为方阵
     for (const std::vector<Tp>& row : matrix)
@@ -57,6 +66,7 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
             throw std::invalid_argument("matrix is not square");
         }
     }
+    rowPointer_.reserve(size_ + 1);
 
     // 开始构造
     rowPointer_.push_back(0);
@@ -67,12 +77,16 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
             const Tp ele = matrix[i][j];
             if (std::abs(ele) > EPSILON)   // 非0元素
             {
-                values_.push_back(ele);
-                colIndex_.push_back(j);
+                values_.emplace_back(ele);
+                colIndex_.emplace_back(j);
             }
         }
-        // 每行结束后记录下一行的起始值
-        rowPointer_.push_back(colIndex_.size());
+        // 每行结束后记录下一行的起始值（对于空行依然，成立）
+        rowPointer_.emplace_back(colIndex_.size());
+    }
+    if (!values_.empty())
+    {
+        allZero_ = false;
     }
     isValid_ = true;
 }
@@ -107,7 +121,7 @@ inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
             }
         }
     }
-    values_.resize(elementNumber);
+    values_.resize(elementNumber);      // 便于之后访问
     // colIndex_.resize(elementNumber);
     colIndex_.reserve(elementNumber);
 
@@ -169,38 +183,58 @@ inline void SparseMatrix<Tp>::printMatrix() const
         std::cerr << "SparseMatrix<Tp>::printMatrix() Error: matrix is not valid" << std::endl;
     }
 
-    for (ULL i = 0; i < size_; ++i)
+    // 存储当前输出格式，便于打印完后恢复
+    std::ios oldState(nullptr);
+    oldState.copyfmt(std::cout);
+
+
+    std::cout << std::fixed << std::setprecision(PRECISION);
+    if (allZero_)   // 全0矩阵
     {
-        // 打印本行第一个非0元素前的0，保留四位小数
-        ULL j = 0;
-        std::cout << std::setprecision(4) << std::fixed;
-        for (; j < colIndex_[rowPointer_[i]]; j++)
+        for (ULL i = 0; i < size_; ++i)
         {
-            std::cout << std::setw(10) << 0.0;
-        }
-
-        // 开始依次判断并打印本行非0元素和0元素
-        for (ULL index = rowPointer_[i];
-            index < rowPointer_[i + 1]; ++j)
-        {
-            if (j == colIndex_[index])  // 该列为非0元素
+            for (ULL j = 0; j < size_; ++j)
             {
-                std::cout << std::setw(10) << values_[index];
-                ++index;
+                std::cout << std::setw(WIDTH) << 0.0;
             }
-            else
-            {
-                std::cout << std::setw(10) << 0.0;
-            }
+            std::cout << "\n";
         }
-
-        // 填充本行后面的0
-        for (; j < size_; ++j)
-        {
-            std::cout << std::setw(10) << 0.0;
-        }
-        std::cout << "\n";
     }
+    else
+    {
+        for (ULL i = 0; i < size_; ++i)
+        {
+            // 打印本行第一个非0元素前的0，保留四位小数
+            ULL j = 0;
+            for (; j < colIndex_[rowPointer_[i]]; j++)
+            {
+                std::cout << std::setw(WIDTH) << 0.0;
+            }
+
+            // 开始依次判断并打印本行非0元素和0元素
+            for (ULL index = rowPointer_[i];
+                index < rowPointer_[i + 1]; ++j)
+            {
+                if (j == colIndex_[index])  // 该列为非0元素
+                {
+                    std::cout << std::setw(WIDTH) << values_[index];
+                    ++index;
+                }
+                else
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+            }
+
+            // 填充本行后面的0
+            for (; j < size_; ++j)
+            {
+                std::cout << std::setw(WIDTH) << 0.0;
+            }
+            std::cout << "\n";
+        }
+    }
+    std::cout.copyfmt(oldState);    // 恢复输出格式
 }
 
 template<typename Tp>
@@ -213,4 +247,25 @@ inline void SparseMatrix<Tp>::setSize(ULL size)
     }
     size_ = size;
     isValid_ = true;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    // 判断索引是否越界
+    if (i >= size_ || j >= size_)
+    {
+        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: index out of range" << std::endl;
+        throw std::out_of_range("index out of range");
+    }
+
+    // 判断是否存在第i行元素
+    
+
 }
