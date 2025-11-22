@@ -11,15 +11,12 @@ using Scalar = double;
 int main()
 {
 
-#if 1
+#if 0
     try
     {
         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
         SparseMatrix<Scalar> A_b(&mesh);
-
-        
-
     }
     catch (std::exception& e)
     {
@@ -31,16 +28,16 @@ int main()
 
 
 
-#if 0
+#if 1
     try
     {
         using Scalar = double;
         std::vector<std::vector<Scalar>> A{
-            { 1, 0, 0, 0, 0 },
-            { 0, 0, 3, 2, 0 },
-            { 0, 2, 0, 0, 0 },
-            { 0, 0, 3, 0, 1 },
-            { 0, 9, 2, 0, 0 }
+            { 0, 0, 0, 0, 0 },
+            { 0, 0, 0, 0, 0 },
+            { 0, 0, 0, 2, 0 },
+            { 0, 0, 0, 0, 1 },
+            { 0, 0, 0, 0, 0 }
         };
 
         SparseMatrix<Scalar> A_sparse(A);
