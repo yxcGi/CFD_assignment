@@ -1,7 +1,7 @@
 #include <iostream>
-#include "Math/Vector.hpp"
+#include "Vector.hpp"
 #include "Geometry/Mesh.h"
-#include "Math/Tensor.hpp"
+#include "Tensor.hpp"
 #include <Field.hpp>
 #include "SparseMatrix.hpp"
 #include <cmath>
