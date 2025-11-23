@@ -3,7 +3,7 @@
 #include <vector>
 #include "Mesh.h"
 #include <queue>
-
+#include <fstream>
 
 /**
  * @brief 采用CSR方法存储稀疏矩阵，仅为方阵
@@ -25,27 +25,26 @@ public:
 
 public:
     // 设置输出宽度
-    static void setWidth(int width);
+    static void setWidth(int width = 10);
     // 设置小数保留位数
-    static void setPrecision(int precision);
+    static void setPrecision(int precision = 4);
 
 public:
     // 打印
     void printMatrix() const;
-    // 设置矩阵大小
-    void setSize(ULL size);
     // 设置系数矩阵i, j元素值
     void setValue(ULL i, ULL j, Tp value);
 
 private:
     std::vector<Tp> values_;        // 存储数据（行优先），大小为矩阵非0元素个数
-    std::vector<ULL> colIndex_;     // 每个元素列索引, 与values一一对应
+    std::vector<ULL> colIndexs_;     // 每个元素列索引, 与values一一对应
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
     bool isValid_{ false };         // 是否有效
-    bool allZero_{ true };          // 是否为全0
 };
 
+
+#pragma endregion 函数实现
 template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(ULL size)
     : size_(size)
@@ -78,16 +77,16 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
             if (std::abs(ele) > EPSILON)   // 非0元素
             {
                 values_.emplace_back(ele);
-                colIndex_.emplace_back(j);
+                colIndexs_.emplace_back(j);
             }
         }
         // 每行结束后记录下一行的起始值（对于空行依然，成立）
-        rowPointer_.emplace_back(colIndex_.size());
+        rowPointer_.emplace_back(colIndexs_.size());
     }
-    if (!values_.empty())
-    {
-        allZero_ = false;
-    }
+    // if (!values_.empty())
+    // {
+    //     allZero_ = false;
+    // }
     isValid_ = true;
 }
 
@@ -122,8 +121,8 @@ inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
         }
     }
     values_.resize(elementNumber);      // 便于之后访问
-    // colIndex_.resize(elementNumber);
-    colIndex_.reserve(elementNumber);
+    // colIndexs_.resize(elementNumber);
+    colIndexs_.reserve(elementNumber);
 
     // 给rowPointer_预分配内存
     // rowPointer_.resize(size_ + 1);
@@ -136,7 +135,6 @@ inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
     ULL currentCellIndex = 0;  // 记录当前遍历到第几个单元（第几行）
     std::priority_queue<ULL, std::vector<ULL>, std::greater<>> neighborCellQueue;       // 小根堆
     ULL neighborCellIndex = -1; // 存储当前单元的邻居单元号
-    ULL currentColIndex = 0;    // 下次添加colIndex_的索引
     for (const Cell& cell : mesh->getCells())
     {
         // 通过便利cell的所有面找到与当前cell邻居单元号（需要按顺序）
@@ -164,15 +162,50 @@ inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
         // 按从小到大顺序放入colIndex_，并构造rowPointer_
         while (!neighborCellQueue.empty())  // 从小到大依次添加
         {
-            // colIndex_[currentColIndex++] = neighborCellQueue.top();
-            colIndex_.emplace_back(neighborCellQueue.top());
+            // colIndexs_[currentColIndex++] = neighborCellQueue.top();
+            colIndexs_.emplace_back(neighborCellQueue.top());
             neighborCellQueue.pop();
         }
         // rowPointer_[currentCellIndex + 1] = currentColIndex;
-        rowPointer_.emplace_back(colIndex_.size());
+        rowPointer_.emplace_back(colIndexs_.size());
         ++currentCellIndex;
     }
-    // isValid_ = true;
+    isValid_ = true;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setWidth(int width)
+{
+    if (width <= 0)
+    {
+        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be greater than 0" << std::endl;
+        throw std::invalid_argument("width must be greater than 0");
+    }
+
+    if (width >= 30)
+    {
+        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be less than 30" << std::endl;
+        throw std::invalid_argument("width must be less than 30");
+    }
+    WIDTH = width;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setPrecision(int precision)
+{
+    if (precision <= 0)
+    {
+        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be greater than 0" << std::endl;
+        throw std::invalid_argument("precision must be greater than 0");
+    }
+
+    if (precision >= 10)
+    {
+        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be less than 10" << std::endl;
+        throw std::invalid_argument("precision must be less than 10");
+    }
+
+    PRECISION = precision;
 }
 
 template<typename Tp>
@@ -189,76 +222,50 @@ inline void SparseMatrix<Tp>::printMatrix() const
 
 
     std::cout << std::fixed << std::setprecision(PRECISION);    // 设置保留小数位数
-    if (allZero_)   // 全0矩阵
+    for (ULL i = 0; i < size_; ++i)
     {
-        for (ULL i = 0; i < size_; ++i)
+        // 判断本行是否为空行(全0), 若为空行直接打印本行
+        if (rowPointer_[i] == rowPointer_[i + 1])   // 空行
         {
-            for (ULL j = 0; j < size_; ++j) 
+            for (ULL j = 0; j < size_; ++j)
+            {
+                std::cout << std::setw(WIDTH) << 0.0;
+            }
+            std::cout << "\n";
+        }
+        else        // 非空行f
+        {
+            // 打印本行第一个非0元素前的0，保留四位小数
+            ULL j = 0;
+            for (; j < colIndexs_[rowPointer_[i]]; j++)
+            {
+                std::cout << std::setw(WIDTH) << 0.0;
+            }
+
+            // 开始依次判断并打印本行非0元素和0元素
+            for (ULL index = rowPointer_[i];
+                index < rowPointer_[i + 1]; ++j)
+            {
+                if (j == colIndexs_[index])  // 该列为非0元素
+                {
+                    std::cout << std::setw(WIDTH) << values_[index];
+                    ++index;
+                }
+                else
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+            }
+
+            // 填充本行后面的0
+            for (; j < size_; ++j)
             {
                 std::cout << std::setw(WIDTH) << 0.0;
             }
             std::cout << "\n";
         }
     }
-    else
-    {
-        for (ULL i = 0; i < size_; ++i)
-        {
-            // 判断本行是否为空行(全0), 若为空行直接打印本行
-            if (rowPointer_[i] == rowPointer_[i + 1])
-            {
-                for (ULL j = 0; j < size_; ++j)
-                {
-                    std::cout << std::setw(WIDTH) << 0.0;
-                }
-                std::cout << "\n";
-            }
-            else
-            {
-                // 打印本行第一个非0元素前的0，保留四位小数
-                ULL j = 0;
-                for (; j < colIndex_[rowPointer_[i]]; j++)
-                {
-                    std::cout << std::setw(WIDTH) << 0.0;
-                }
-
-                // 开始依次判断并打印本行非0元素和0元素
-                for (ULL index = rowPointer_[i];
-                    index < rowPointer_[i + 1]; ++j)
-                {
-                    if (j == colIndex_[index])  // 该列为非0元素
-                    {
-                        std::cout << std::setw(WIDTH) << values_[index];
-                        ++index;
-                    }
-                    else
-                    {
-                        std::cout << std::setw(WIDTH) << 0.0;
-                    }
-                }
-
-                // 填充本行后面的0
-                for (; j < size_; ++j)
-                {
-                    std::cout << std::setw(WIDTH) << 0.0;
-                }
-                std::cout << "\n";
-            }
-        }
-    }
     std::cout.copyfmt(oldState);    // 恢复输出格式
-}
-
-template<typename Tp>
-inline void SparseMatrix<Tp>::setSize(ULL size)
-{
-    if (isValid_)   // 如果已经有效，则不能再设置
-    {
-        std::cerr << "SparseMatrix<Tp>::setSize(ULL size) Error: matrix is valid" << std::endl;
-        throw std::invalid_argument("matrix is valid");
-    }
-    size_ = size;
-    isValid_ = true;
 }
 
 template<typename Tp>
@@ -278,6 +285,30 @@ inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
     }
 
     // 判断是否存在第i行元素
-    
+    if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
+    {
+        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
+        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+    }
 
+    // 判断是否存在第i行的第j列元素, index为colIndexs_的索引值
+    if (j < colIndexs_[rowPointer_[i]] || j > colIndexs_[rowPointer_[i + 1] - 1])
+    {
+        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
+        throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+    }
+
+    // 存在则修改
+    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+    {
+        if (colIndexs_[index] == j)     // 存在A(i,j)元素
+        {
+            values_[index] = value;
+            return;
+        }
+    }
+
+    // 正常不该走到这里
+    std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: unknown error" << std::endl;
+    throw std::runtime_error("unknown error");
 }

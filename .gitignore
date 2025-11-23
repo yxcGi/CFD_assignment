@@ -8,6 +8,7 @@ build
 
 main
 a.out*
+a.*
 a.cpp
 outputPolyMesh
 
