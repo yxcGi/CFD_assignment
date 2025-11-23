@@ -188,12 +188,12 @@ inline void SparseMatrix<Tp>::printMatrix() const
     oldState.copyfmt(std::cout);
 
 
-    std::cout << std::fixed << std::setprecision(PRECISION);
+    std::cout << std::fixed << std::setprecision(PRECISION);    // 设置保留小数位数
     if (allZero_)   // 全0矩阵
     {
         for (ULL i = 0; i < size_; ++i)
         {
-            for (ULL j = 0; j < size_; ++j)
+            for (ULL j = 0; j < size_; ++j) 
             {
                 std::cout << std::setw(WIDTH) << 0.0;
             }
@@ -204,34 +204,46 @@ inline void SparseMatrix<Tp>::printMatrix() const
     {
         for (ULL i = 0; i < size_; ++i)
         {
-            // 打印本行第一个非0元素前的0，保留四位小数
-            ULL j = 0;
-            for (; j < colIndex_[rowPointer_[i]]; j++)
+            // 判断本行是否为空行(全0), 若为空行直接打印本行
+            if (rowPointer_[i] == rowPointer_[i + 1])
             {
-                std::cout << std::setw(WIDTH) << 0.0;
-            }
-
-            // 开始依次判断并打印本行非0元素和0元素
-            for (ULL index = rowPointer_[i];
-                index < rowPointer_[i + 1]; ++j)
-            {
-                if (j == colIndex_[index])  // 该列为非0元素
-                {
-                    std::cout << std::setw(WIDTH) << values_[index];
-                    ++index;
-                }
-                else
+                for (ULL j = 0; j < size_; ++j)
                 {
                     std::cout << std::setw(WIDTH) << 0.0;
                 }
+                std::cout << "\n";
             }
-
-            // 填充本行后面的0
-            for (; j < size_; ++j)
+            else
             {
-                std::cout << std::setw(WIDTH) << 0.0;
+                // 打印本行第一个非0元素前的0，保留四位小数
+                ULL j = 0;
+                for (; j < colIndex_[rowPointer_[i]]; j++)
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+
+                // 开始依次判断并打印本行非0元素和0元素
+                for (ULL index = rowPointer_[i];
+                    index < rowPointer_[i + 1]; ++j)
+                {
+                    if (j == colIndex_[index])  // 该列为非0元素
+                    {
+                        std::cout << std::setw(WIDTH) << values_[index];
+                        ++index;
+                    }
+                    else
+                    {
+                        std::cout << std::setw(WIDTH) << 0.0;
+                    }
+                }
+
+                // 填充本行后面的0
+                for (; j < size_; ++j)
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+                std::cout << "\n";
             }
-            std::cout << "\n";
         }
     }
     std::cout.copyfmt(oldState);    // 恢复输出格式
