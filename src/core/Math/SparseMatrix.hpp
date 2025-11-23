@@ -216,6 +216,12 @@ inline void SparseMatrix<Tp>::printMatrix() const
         std::cerr << "SparseMatrix<Tp>::printMatrix() Error: matrix is not valid" << std::endl;
     }
 
+    if (size_ > 30) // 矩阵过大则不支持输出
+    {
+        std::cerr << "SparseMatrix<Tp>::printMatrix() Error: matrix is too large" << std::endl;
+        return;
+    }
+
     // 存储当前输出格式，便于打印完后恢复
     std::ios oldState(nullptr);
     oldState.copyfmt(std::cout);
