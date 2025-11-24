@@ -12,50 +12,53 @@ int main()
 {
 
 
-    // #if 0
-    //     try
-    //     {
-    //         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+    #if 0
+        try
+        {
+            Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
-    //         SparseMatrix<Scalar> A_b(&mesh);
-    //         A_b.printMatrix();
-    //     }
-    //     catch (std::exception& e)
-    //     {
-    //         std::cerr << "Exception: " << e.what() << std::endl;
-    //     }
-    // #endif
-
-
+            SparseMatrix<Scalar> A_b(&mesh);
+            A_b.printMatrix();
+        }
+        catch (std::exception& e)
+        {
+            std::cerr << "Exception: " << e.what() << std::endl;
+        }
+    #endif
 
 
 
-    // #if 0
-    //     try
-    //     {
-    //         using Scalar = double;
-    //         std::vector<std::vector<Scalar>> A{
-    //             { 0, 0, 0, 0, 0 },
-    //             { 0, 1, 0, 0, 0 },
-    //             { 0, 0, 0, 0, 0 },
-    //             { 2, 0, 0, 0, 0 },
-    //             { 0, 0, 0, 4, 0 }
-    //         };
 
-    //         SparseMatrix<Scalar> A_sparse(A);
 
-    //         A_sparse.setValue(1, 1, 92);
-    //         A_sparse.setValue(3, 0, 9);
+    #if 1
+        try
+        {
+            using Scalar = double;
+            std::vector<std::vector<Scalar>> A{
+                { 0, 0, 0, 0, 0 },
+                { 0, 1, 0, 0, 0 },
+                { 0, 0, 0, 0, 0 },
+                { 2, 0, 0, 0, 0 },
+                { 0, 0, 0, 4, 0 }
+            };
 
-    //         A_sparse.printMatrix();
-    //     }
-    //     catch (std::exception& e)
-    //     {
-    //         std::cerr << "Exception: " << e.what() << std::endl;
-    //     }
-    // #endif
+            SparseMatrix<Scalar> A_sparse(A);
 
-#if 1
+            A_sparse.setValue(1, 1, 92);
+            A_sparse.setValue(3, 0, 9);
+            A_sparse.addValue(1, 1, 10);
+            A_sparse.addValue(3, 0, 100);
+            std::cout << A_sparse(1, 1) << std::endl;
+
+            A_sparse.printMatrix();
+        }
+        catch (std::exception& e)
+        {
+            std::cerr << "Exception: " << e.what() << std::endl;
+        }
+    #endif
+
+#if 0
     try
     {
         using Scalar = double;

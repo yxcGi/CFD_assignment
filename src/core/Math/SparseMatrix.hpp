@@ -24,9 +24,8 @@ class SparseMatrix
     inline static int PRECISION = 4;    // 保留小数位数
 public:
     SparseMatrix() = default;
-    SparseMatrix(ULL size);
-    SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化
-    SparseMatrix(const Mesh* mesh);     // 通过读取网格信息初始化
+    SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化(构造后进行压缩，之后无法访问0元素区域)
+    SparseMatrix(const Mesh* mesh);     // 通过读取网格信息初始化(给相应位置留空位)
 
 public:
     // 设置输出宽度
@@ -35,10 +34,15 @@ public:
     static void setPrecision(int precision = 4);
 
 public:
+    // 初始化函数
+    void init(const std::vector<std::vector<Tp>>& matrix);
+    void init(const Mesh* mesh);
     // 打印
     void printMatrix() const;
     // 设置系数矩阵i, j元素值
     void setValue(ULL i, ULL j, Tp value);
+    // 添加矩阵元素
+    void addValue(ULL i, ULL j, Tp value);
 
 
     // 获取矩阵元素，括号重载
@@ -58,17 +62,65 @@ private:
 
 
 #pragma region 函数实现
-template<typename Tp>
-inline SparseMatrix<Tp>::SparseMatrix(ULL size)
-    : size_(size)
-{}
 
 
 template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix)
     : size_(matrix.size())
 {
+    init(matrix);
+}
 
+template<typename Tp>
+inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
+{
+    init(mesh);
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setWidth(int width)
+{
+    if (width <= 0)
+    {
+        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be greater than 0" << std::endl;
+        throw std::invalid_argument("width must be greater than 0");
+    }
+
+    if (width >= 30)
+    {
+        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be less than 30" << std::endl;
+        throw std::invalid_argument("width must be less than 30");
+    }
+    WIDTH = width;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setPrecision(int precision)
+{
+    if (precision <= 0)
+    {
+        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be greater than 0" << std::endl;
+        throw std::invalid_argument("precision must be greater than 0");
+    }
+
+    if (precision >= 10)
+    {
+        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be less than 10" << std::endl;
+        throw std::invalid_argument("precision must be less than 10");
+    }
+
+    PRECISION = precision;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
+{
+    if (isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix) Error: matrix is already initialized" << std::endl;
+        throw std::invalid_argument("matrix is already initialized");
+    }
+    
     // 判断是否为方阵
     for (const std::vector<Tp>& row : matrix)
     {
@@ -104,8 +156,14 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
 }
 
 template<typename Tp>
-inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
+inline void SparseMatrix<Tp>::init(const Mesh* mesh)
 {
+    if (isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::init(const Mesh* mesh) Error: matrix is already initialized" << std::endl;
+        throw std::invalid_argument("matrix is already initialized");
+    }
+    
     if (!mesh->isValid())
     {
         std::cerr << "SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh) Error: mesh is not valid" << std::endl;
@@ -184,41 +242,6 @@ inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
         ++currentCellIndex;
     }
     isValid_ = true;
-}
-
-template<typename Tp>
-inline void SparseMatrix<Tp>::setWidth(int width)
-{
-    if (width <= 0)
-    {
-        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be greater than 0" << std::endl;
-        throw std::invalid_argument("width must be greater than 0");
-    }
-
-    if (width >= 30)
-    {
-        std::cerr << "SparseMatrix<Tp>::setWidth(int width) Error: width must be less than 30" << std::endl;
-        throw std::invalid_argument("width must be less than 30");
-    }
-    WIDTH = width;
-}
-
-template<typename Tp>
-inline void SparseMatrix<Tp>::setPrecision(int precision)
-{
-    if (precision <= 0)
-    {
-        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be greater than 0" << std::endl;
-        throw std::invalid_argument("precision must be greater than 0");
-    }
-
-    if (precision >= 10)
-    {
-        std::cerr << "SparseMatrix<Tp>::setPrecision(int precision) Error: precision must be less than 10" << std::endl;
-        throw std::invalid_argument("precision must be less than 10");
-    }
-
-    PRECISION = precision;
 }
 
 template<typename Tp>
@@ -334,6 +357,12 @@ inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
 }
 
 template<typename Tp>
+inline void SparseMatrix<Tp>::addValue(ULL i, ULL j, Tp value)
+{
+    (*this)(i, j) += value;
+}
+
+template<typename Tp>
 inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
 {
     // 判断矩阵是否有效
@@ -354,7 +383,7 @@ inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
     if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
     {
         std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
-        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+        throw std::invalid_argument("row " + std::to_string(i) + " is empty");  
     }
 
     // 寻找第j列元素
