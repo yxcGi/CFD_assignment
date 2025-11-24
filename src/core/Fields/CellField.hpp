@@ -1,4 +1,8 @@
-#pragma once
+#ifndef CELLFIELD_H_
+#define CELLFIELD_H_
+
+
+
 
 
 #include "BaseField.hpp"
@@ -149,3 +153,4 @@ inline FaceField<Tp> CellField<Tp>::cellToFace(interpolation::Scheme scheme) con
 
 
 
+#endif // CELLFIELD_H_

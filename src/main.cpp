@@ -67,7 +67,7 @@ int main()
 
         phi.setValue(
             [](Scalar x, Scalar y, Scalar z) {
-                return std::sin(100 * x) * 100;
+                return std::sin(100 * x) * std::log(x + y + 1);
             }
         );
 

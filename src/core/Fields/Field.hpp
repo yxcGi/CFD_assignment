@@ -1,4 +1,9 @@
-#pragma once
+#ifndef FIELD_H_
+#define FIELD_H_
+
+
+
+
 
 #include "FaceField.hpp"
 #include "CellField.hpp"
@@ -743,3 +748,8 @@ inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* V
     }
     return resultField;
 }
+
+
+
+
+#endif // FIELD_H_

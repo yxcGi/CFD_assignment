@@ -1,4 +1,9 @@
-#pragma once
+#ifndef BOUNDARYCONDITION_H_
+#define BOUNDARYCONDITION_H_
+
+
+
+
 
 #include <string>
 #include "Mesh.h"
@@ -145,3 +150,8 @@ inline bool BoundaryCondition<Tp>::isValid() const
     return isSet_;
 }
 
+
+
+
+
+#endif // BOUNDARYCONDITION_H_

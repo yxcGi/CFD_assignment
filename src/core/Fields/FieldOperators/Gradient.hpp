@@ -1,4 +1,8 @@
-#pragma once
+#ifndef GRADIENT_H_
+#define GRADIENT_H_
+
+
+
 
 
 #include "Vector.hpp"
@@ -201,3 +205,7 @@ auto grad(
 //     // }
 //     return resultField;
 // }
+
+
+
+#endif // GRADIENT_H_
