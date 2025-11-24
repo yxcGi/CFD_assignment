@@ -688,9 +688,17 @@ inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* V
                         continue;
                     }
                     const Face& face = faces[j];
-                    Vector<Scalar> Sf = face.getArea() * face.getNormal();
+                    Vector<Scalar> Sf = face.getArea() * face.getNormal();  // 假设法向量向外
                     Tp phi = currentFaceField[j];
-                    total_Phi_Sf += phi * Sf;
+                    // 判断法向量指向
+                    if (face.getOwnerIndex() == i)  // 向外
+                    {
+                        total_Phi_Sf += phi * Sf;
+                    }
+                    else
+                    {
+                        total_Phi_Sf -= phi * Sf;
+                    }
                 }
                 resultField[i] = total_Phi_Sf / cell.getVolume();
             }
@@ -709,7 +717,15 @@ inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* V
                     const Face& face = faces[j];
                     Vector<Scalar> Sf = face.getArea() * face.getNormal();
                     Tp phi = currentFaceField[j];
-                    total_Phi_Sf += phi * Sf;
+                    // 判断法向量指向
+                    if (face.getOwnerIndex() == i)  // 向外
+                    {
+                        total_Phi_Sf += phi * Sf;
+                    }
+                    else
+                    {
+                        total_Phi_Sf -= phi * Sf;
+                    }
                 }
                 resultField[i] = total_Phi_Sf / cell.getVolume();
             }

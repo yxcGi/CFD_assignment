@@ -67,14 +67,14 @@ int main()
 
         phi.setValue(
             [](Scalar x, Scalar y, Scalar z) {
-                return  2 * x + 2 * y;
+                return std::sin(100 * x) * 100;
             }
         );
 
-        phi.setBoundaryCondition("inlet", 1, 0, 300);
-        phi.setBoundaryCondition("outlet", 1, 0, 300);
-        phi.setBoundaryCondition("upperWall", 1, 0, 300);
-        phi.setBoundaryCondition("lowerWall", 1, 0, 300);
+        phi.setBoundaryCondition("inlet", 0, 1, 0);
+        phi.setBoundaryCondition("outlet", 0, 1, 0);
+        phi.setBoundaryCondition("upperWall", 0, 1, 0);
+        phi.setBoundaryCondition("lowerWall", 0, 1, 0);
         // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
