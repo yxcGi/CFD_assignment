@@ -1,4 +1,9 @@
-#pragma once
+#ifndef FACEFIELD_H_
+#define FACEFIELD_H_
+
+
+
+
 
 
 #include "BaseField.hpp"
@@ -69,3 +74,7 @@ inline const std::unordered_map<std::string, BoundaryPatch>& FaceField<Tp>::getB
 //     this->data_.resize(this->mesh_->getFaceNumber(), value);
 //     this->isValid_ = true;
 // }
+
+
+
+#endif // FACEFIELD_H_

@@ -1,4 +1,9 @@
-#pragma once
+#ifndef INTERPOLATION_H_
+#define INTERPOLATION_H_
+
+
+
+
 
 #include <iostream>
 
@@ -59,3 +64,7 @@ inline Tp Interpolation<Tp>::operator()(
     std::cerr << "interpolation::Scheme not supported!" << std::endl;
     throw std::runtime_error("interpolation::Scheme not supported!");
 }
+
+
+
+#endif // INTERPOLATION_H_
