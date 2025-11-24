@@ -70,7 +70,14 @@ auto grad(
                     const Face& face = faces[j];
                     Vector<Scalar> Sf = face.getArea() * face.getNormal();
                     Tp phi = faceField[j];
-                    total_Phi_Sf += (phi * Sf);
+                    if (face.getOwnerIndex() == i)  // 向外
+                    {
+                        total_Phi_Sf += phi * Sf;
+                    }
+                    else
+                    {
+                        total_Phi_Sf -= phi * Sf;
+                    }
                 }
                 resultGradCellField_0[i] = total_Phi_Sf / cell.getVolume();
             }
@@ -86,6 +93,14 @@ auto grad(
                     const Face& face = faces[j];
                     Vector<Scalar> Sf = face.getArea() * face.getNormal();
                     Tp phi = faceField[j];
+                    if (face.getOwnerIndex() == i)  // 向外
+                    {
+                        total_Phi_Sf += phi * Sf;
+                    }
+                    else
+                    {
+                        total_Phi_Sf -= phi * Sf;
+                    }
                 }
                 resultGradCellField_0[i] = total_Phi_Sf / cell.getVolume();
             }
