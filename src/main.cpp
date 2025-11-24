@@ -11,50 +11,51 @@ using Scalar = double;
 int main()
 {
 
+    
+// #if 0
+//     try
+//     {
+//         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+
+//         SparseMatrix<Scalar> A_b(&mesh);
+//         A_b.printMatrix();
+//     }
+//     catch (std::exception& e)
+//     {
+//         std::cerr << "Exception: " << e.what() << std::endl;
+//     }
+// #endif
+
+
+
+
+
+// #if 0
+//     try
+//     {
+//         using Scalar = double;
+//         std::vector<std::vector<Scalar>> A{
+//             { 0, 0, 0, 0, 0 },
+//             { 0, 1, 0, 0, 0 },
+//             { 0, 0, 0, 0, 0 },
+//             { 2, 0, 0, 0, 0 },
+//             { 0, 0, 0, 4, 0 }
+//         };
+
+//         SparseMatrix<Scalar> A_sparse(A);
+
+//         A_sparse.setValue(1, 1, 92);
+//         A_sparse.setValue(3, 0, 9);
+
+//         A_sparse.printMatrix();
+//     }
+//     catch (std::exception& e)
+//     {
+//         std::cerr << "Exception: " << e.what() << std::endl;
+//     }
+// #endif
+
 #if 1
-    try
-    {
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
-
-        SparseMatrix<Scalar> A_b(&mesh);
-        A_b.printMatrix();
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
-#endif
-
-
-
-
-
-#if 0
-    try
-    {
-        using Scalar = double;
-        std::vector<std::vector<Scalar>> A{
-            { 0, 0, 0, 0, 0 },
-            { 0, 1, 0, 0, 0 },
-            { 0, 0, 0, 0, 0 },
-            { 2, 0, 0, 0, 0 },
-            { 0, 0, 0, 4, 0 }
-        };
-
-        SparseMatrix<Scalar> A_sparse(A);
-
-        A_sparse.setValue(1, 1, 92);
-        A_sparse.setValue(3, 0, 9);
-
-        A_sparse.printMatrix();
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
-#endif
-
-#if 0
     try
     {
         using Scalar = double;
@@ -65,7 +66,7 @@ int main()
         Field<Scalar> phi("T", &mesh);
 
         phi.setValue(
-            [](Scalar x, Scalar y, Scalar z) {
+            [](Scalar x, Scalar y = 0, Scalar z = 0) {
                 return std::sin(200 * x * x) * 200;
             }
         );
@@ -79,6 +80,8 @@ int main()
 
         // phi.cellToFace();
         phi.writeToFile("phi.dat");
+
+        // getchar();
     }
     catch (const std::exception& e)
     {

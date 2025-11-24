@@ -1,4 +1,9 @@
-#pragma once
+#ifndef SPARSEMATRIX_H_
+#define SPARSEMATRIX_H_
+
+
+
+
 
 #include <vector>
 #include "Mesh.h"
@@ -34,6 +39,14 @@ public:
     void printMatrix() const;
     // 设置系数矩阵i, j元素值
     void setValue(ULL i, ULL j, Tp value);
+
+
+    // 获取矩阵元素，括号重载
+    Tp& operator()(ULL i, ULL j);
+    const Tp& operator()(ULL i, ULL j) const;
+
+private:
+
 
 private:
     std::vector<Tp> values_;        // 存储数据（行优先），大小为矩阵非0元素个数
@@ -214,6 +227,7 @@ inline void SparseMatrix<Tp>::printMatrix() const
     if (!isValid_)      // 如果无效，则不能打印
     {
         std::cerr << "SparseMatrix<Tp>::printMatrix() Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
     }
 
     if (size_ > 30) // 矩阵过大则不支持输出
@@ -297,14 +311,14 @@ inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
         throw std::invalid_argument("row " + std::to_string(i) + " is empty");
     }
 
-    // 判断是否存在第i行的第j列元素, index为colIndexs_的索引值
-    if (j < colIndexs_[rowPointer_[i]] || j > colIndexs_[rowPointer_[i + 1] - 1])
-    {
-        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
-        throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
-    }
+    // // 判断是否存在第i行的第j列元素, index为colIndexs_的索引值
+    // if (j < colIndexs_[rowPointer_[i]] || j > colIndexs_[rowPointer_[i + 1] - 1])
+    // {
+    //     std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
+    //     throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+    // }
 
-    // 存在则修改
+    // 寻找第j列元素
     for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
     {
         if (colIndexs_[index] == j)     // 存在A(i,j)元素
@@ -314,7 +328,86 @@ inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
         }
     }
 
-    // 正常不该走到这里
-    std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: unknown error" << std::endl;
-    throw std::runtime_error("unknown error");
+    // 不存在第j列元素
+    std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
+    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
 }
+
+template<typename Tp>
+inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
+{
+    // 判断矩阵是否有效
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    // 判断索引是否越界
+    if (i >= size_ || j >= size_)
+    {
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: index out of range" << std::endl;
+        throw std::out_of_range("index out of range");
+    }
+
+    // 判断是否存在第i行元素
+    if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
+    {
+        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
+        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+    }
+
+    // 寻找第j列元素
+    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+    {
+        if (colIndexs_[index] == j)
+        {
+            return values_[index];
+        }
+    }
+
+    // 走到这说明不存在j列元素
+    std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
+    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+}
+
+template<typename Tp>
+inline const Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    if (i >= size_ || j >= size_)
+    {
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: index out of range" << std::endl;
+        throw std::out_of_range("index out of range");
+    }
+
+    // 是否存在该行元素
+    if (rowPointer_[i] == rowPointer_[i + 1])
+    {
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: row " << i << " is empty" << std::endl;
+        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+    }
+
+    // 遍历该行元素
+    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+    {
+        if (colIndexs_[index] == j)
+        {
+            return values_[index];
+        }
+    }
+
+    // 不存在该j列元素
+    std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
+    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+}
+
+
+
+
+#endif // SPARSEMATRIX_H_

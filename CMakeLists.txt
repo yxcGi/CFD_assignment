@@ -11,6 +11,12 @@ project(${PRJ_NAME}
     HOMEPAGE_URL "https://github.com/yxcGi/CFD_assignment.git"
 )
 
+if(NOT CMAKE_BUILD_TYPE)
+    # set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -20,7 +26,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # 设置为Release模式
 
 # 编译选项
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall -Wextra -pedantic")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
