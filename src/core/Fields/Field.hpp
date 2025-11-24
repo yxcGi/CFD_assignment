@@ -62,6 +62,9 @@ public:
     FaceField<Tp>& getFaceField();
     const CellField<Tp>& getCellField() const;
     CellField<Tp>& getCellField();
+    const CellField<Tp>& getCellField_0() const;
+    CellField<Tp>& getCellField_0();
+
     std::string getName() const;
     Mesh* getMesh() const;
 
@@ -196,6 +199,26 @@ inline CellField<Tp>& Field<Tp>::getCellField()
         return cellField_;
     }
     return cellField_;
+}
+
+template<typename Tp>
+inline const CellField<Tp>& Field<Tp>::getCellField_0() const
+{
+    if (isValid())
+    {
+        return cellField_0_;
+    }
+    return cellField_0_;
+}
+
+template<typename Tp>
+inline CellField<Tp>& Field<Tp>::getCellField_0()
+{
+    if (isValid())
+    {
+        return cellField_0_;
+    }
+    return cellField_0_;
 }
 
 template<typename Tp>
@@ -477,7 +500,7 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
         ofs << "Title=" << "\"" << this->getName() << "_2D_Tecplot\"\n";
         if constexpr (std::is_same_v<Tp, Scalar>)       // 标量场
         {
-            std::cout << "Writing scalar field to Tecplot file...\n";
+            std::cout << "Writing scalar field to Tecplot file..." << std::endl;
             ofs << R"(VARIABLES="X","Y",")" << name_ << "\"\n";
             ofs << "ZONE T=\"" << name_ << "\",N=" << (mesh->getPointNumber()) << ",E=" << mesh->getCellNumber();   // 进入分支接着输出
 
@@ -505,7 +528,7 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
                 // 输出每个cell的场值
                 for (ULL i = 0; i < mesh->getCellNumber(); ++i)
                 {
-                    ofs << this->cellField_[i] << " ";
+                    ofs << this->cellField_0_[i] << " ";
                 }
                 ofs << "\n";
 
@@ -544,7 +567,7 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
                 // 每个二维单元由哪几个点构成
                 for (const Cell& cell : mesh->getCells())
                 {
-                    ULL emptyFaceIndex = 0;     // 记录该单元的empty面的索引
+                    ULL emptyFaceIndex = ULLONG_MAX;     // 记录该单元的empty面的索引
                     for (const ULL faceId : cell.getFaceIndexes())
                     {
                         if (faceId >= mesh->getEmptyFaceIndexesPair().first &&
@@ -561,14 +584,12 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
                     ofs << "\n";
                 }
             }
-
-
         }
         else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)    // 矢量场
         {
             std::cout << "Writing vector field to Tecplot file..." << std::endl;
-            ofs << R"(VARIABLES="X","Y","U","V")" << std::endl;
-            ofs << "ZONE T=\"" << name_ << "\",n=" << (mesh->getPointNumber()) / 2 << ",e=" << mesh->getCellNumber() << ",f=feblock";
+            ofs << R"(VARIABLES="X","Y",")" << name_ << "_U\",\"" << name_ << "_V\"\n";
+            ofs << "ZONE T=\"" << name_ << "\",N=" << mesh->getPointNumber() << ",E=" << mesh->getCellNumber();
 
             if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::TRIANGLE)      // 二维三角形网格  矢量
@@ -579,8 +600,48 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
             else if (this->getMesh()->getMeshShape() ==
                 Mesh::MeshShape::QUADRILATERAL) // 二维四边形网格  矢量
             {
-                ofs << ",et=quadrilateral" << std::endl;
+                ofs << ",ZONETYPE=FEQUADRILATERAL\n";
+                ofs << "DATAPACKING=BLOCK\n";
+                ofs << "VARLOCATION=([1-2]=NODAL, [3-4]=CELLCENTERED)\n";
 
+                // 输出所有点的x,y坐标
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.x() << "\n";
+                }
+                for (const Point& point : mesh->getPoints())
+                {
+                    ofs << point.y() << "\n";
+                }
+                // 输出所有单元的场值(u, v)
+                for (ULL i = 0; i < mesh->getCellNumber(); ++i)
+                {
+                    ofs << this->cellField_0_[i].x() << "\n";
+                }
+                for (ULL i = 0; i < mesh->getCellNumber(); ++i)
+                {
+                    ofs << this->cellField_0_[i].y() << "\n";
+                }
+
+                // 输出每个单元的点顺序
+                for (const Cell& cell : mesh->getCells())
+                {
+                    ULL emptyFaceIndex = ULLONG_MAX;     // 记录该单元的empty面的索引
+                    for (const ULL faceId : cell.getFaceIndexes())
+                    {
+                        if (faceId >= mesh->getEmptyFaceIndexesPair().first &&
+                            faceId < mesh->getEmptyFaceIndexesPair().second)
+                        {
+                            emptyFaceIndex = faceId;
+                        }
+                    }
+                    const std::vector<ULL>& emptyFacePointIndexes = mesh->getFaces()[emptyFaceIndex].getPointIndexes();
+                    for (const ULL pointId : emptyFacePointIndexes)
+                    {
+                        ofs << pointId + 1 << " ";      // tecplot索引从1开始
+                    }
+                    ofs << "\n";
+                }
             }
         }
     }

@@ -11,49 +11,49 @@ using Scalar = double;
 int main()
 {
 
-    
-// #if 0
-//     try
-//     {
-//         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
-//         SparseMatrix<Scalar> A_b(&mesh);
-//         A_b.printMatrix();
-//     }
-//     catch (std::exception& e)
-//     {
-//         std::cerr << "Exception: " << e.what() << std::endl;
-//     }
-// #endif
+    // #if 0
+    //     try
+    //     {
+    //         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
-
+    //         SparseMatrix<Scalar> A_b(&mesh);
+    //         A_b.printMatrix();
+    //     }
+    //     catch (std::exception& e)
+    //     {
+    //         std::cerr << "Exception: " << e.what() << std::endl;
+    //     }
+    // #endif
 
 
 
-// #if 0
-//     try
-//     {
-//         using Scalar = double;
-//         std::vector<std::vector<Scalar>> A{
-//             { 0, 0, 0, 0, 0 },
-//             { 0, 1, 0, 0, 0 },
-//             { 0, 0, 0, 0, 0 },
-//             { 2, 0, 0, 0, 0 },
-//             { 0, 0, 0, 4, 0 }
-//         };
 
-//         SparseMatrix<Scalar> A_sparse(A);
 
-//         A_sparse.setValue(1, 1, 92);
-//         A_sparse.setValue(3, 0, 9);
+    // #if 0
+    //     try
+    //     {
+    //         using Scalar = double;
+    //         std::vector<std::vector<Scalar>> A{
+    //             { 0, 0, 0, 0, 0 },
+    //             { 0, 1, 0, 0, 0 },
+    //             { 0, 0, 0, 0, 0 },
+    //             { 2, 0, 0, 0, 0 },
+    //             { 0, 0, 0, 4, 0 }
+    //         };
 
-//         A_sparse.printMatrix();
-//     }
-//     catch (std::exception& e)
-//     {
-//         std::cerr << "Exception: " << e.what() << std::endl;
-//     }
-// #endif
+    //         SparseMatrix<Scalar> A_sparse(A);
+
+    //         A_sparse.setValue(1, 1, 92);
+    //         A_sparse.setValue(3, 0, 9);
+
+    //         A_sparse.printMatrix();
+    //     }
+    //     catch (std::exception& e)
+    //     {
+    //         std::cerr << "Exception: " << e.what() << std::endl;
+    //     }
+    // #endif
 
 #if 1
     try
@@ -66,8 +66,8 @@ int main()
         Field<Scalar> phi("T", &mesh);
 
         phi.setValue(
-            [](Scalar x, Scalar y = 0, Scalar z = 0) {
-                return std::sin(200 * x * x) * 200;
+            [](Scalar x, Scalar y, Scalar z) {
+                return  2 * x + 2 * y;
             }
         );
 
@@ -78,8 +78,9 @@ int main()
         // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
-        // phi.cellToFace();
-        phi.writeToFile("phi.dat");
+
+        Field<Vector<Scalar>> gradPhi(grad(phi));
+        gradPhi.writeToFile("phi.dat");
 
         // getchar();
     }
