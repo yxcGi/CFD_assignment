@@ -8,21 +8,21 @@
 
 
 
-// 采用模板全特化，判断梯度类型
-template<typename T>
-struct GradientType;
+// // 采用模板全特化，判断梯度类型
+// template<typename T>
+// struct GradientType;
 
-template<>
-struct GradientType<Scalar>
-{
-    using Type = Vector<Scalar>;
-};
+// template<>
+// struct GradientType<Scalar>
+// {
+//     using Type = Vector<Scalar>;
+// };
 
-template<>
-struct GradientType<Vector<Scalar>>
-{
-    using Type = Tensor<Scalar>;
-};
+// template<>
+// struct GradientType<Vector<Scalar>>
+// {
+//     using Type = Tensor<Scalar>;
+// };
 
 // 输出场的文件类型
 enum class WriteFileType
@@ -53,10 +53,15 @@ public:
     // 采用函数对象
     void setValue(const std::function<Tp(Scalar, Scalar, Scalar)>& func);
 
+    // 用于默认初始化，设置有效
+    void initialize();
+
 
     // 获取器
     const FaceField<Tp>& getFaceField() const;
+    FaceField<Tp>& getFaceField();
     const CellField<Tp>& getCellField() const;
+    CellField<Tp>& getCellField();
     std::string getName() const;
     Mesh* getMesh() const;
 
@@ -146,16 +151,50 @@ inline void Field<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scalar)>&
     // cellGradientField_ = grad(gradientMethod_);
 }
 
+template<typename Tp>
+inline void Field<Tp>::initialize()
+{
+    setValue(Tp{});
+}
+
 
 template<typename Tp>
 inline const FaceField<Tp>& Field<Tp>::getFaceField() const
 {
+    if (isValid())
+    {
+        return faceField_;
+    }
+    return faceField_;
+}
+
+template<typename Tp>
+inline FaceField<Tp>& Field<Tp>::getFaceField()
+{
+    if (isValid())
+    {
+        return faceField_;
+    }
     return faceField_;
 }
 
 template<typename Tp>
 inline const CellField<Tp>& Field<Tp>::getCellField() const
 {
+    if (isValid())
+    {
+        return cellField_;
+    }
+    return cellField_;
+}
+
+template<typename Tp>
+inline CellField<Tp>& Field<Tp>::getCellField()
+{
+    if (isValid())
+    {
+        return cellField_;
+    }
     return cellField_;
 }
 
@@ -206,6 +245,10 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
         throw std::runtime_error("Boundary condition is not valid!");
     }
 
+    // 先利用本时间步的面场计算梯度
+    cellGradientField_ = grad(gradientMethod_);
+
+
     using LL = long long;
     Mesh* mesh = this->getMesh();      // 获取网格
     const std::vector<Face>& faces = mesh->getFaces();  // 面列表
@@ -249,7 +292,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 
 
     // 再遍历边界面，需考虑边界条件
-    for (const auto& [name, bc] : cellField_0_.getBoundaryConditions())
+    for (const auto& [name, bc] : boundaryConditions_)
     {
         if (bc.getType() ==
             BoundaryPatch::BoundaryType::EMPTY) // 不需要处理empty边界
@@ -346,12 +389,12 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
             {
                 continue;
             }
-            
+
             // 获取nFace和startFace
             ULL nFace = bc.getNFace();
             ULL startFace = bc.getStartFace();
 
- 
+
             // 设置当前边界所有面的值
             for (ULL boundaryFaceIndex = startFace;
                 boundaryFaceIndex < startFace + nFace;
@@ -367,7 +410,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
 
                 // 计算中间量
                 Vector<Scalar> E = V_CB / (V_CB & normal);
-                Vector<Scalar> T = normal - E;
+                // Vector<Scalar> T = normal - E;
                 Scalar E_magnitude = E.magnitude();
                 Scalar distance_CB = ownerCenter.getDistance(faceCenter);
                 Scalar a = bc.get_a();
@@ -376,7 +419,7 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
 
                 // 计算c1, c2
                 Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
-                Tp c2 = c * distance_CB / (a * distance_CB + b * E_magnitude);  // 此处c2没有用到ownerCell梯度（梯度=0）
+                Tp c2 = (c * distance_CB) / (a * distance_CB + b * E_magnitude);  // 此处c2没有用到ownerCell梯度（梯度=0）
 
                 // 计算边界面的值
                 Tp boundaryFaceValue = c1 * cellField[ownerIndex] + c2;
@@ -384,9 +427,6 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
             }
         }
     }
-
-    // 对边界赋值完后，首次设置单元梯度值
-    cellGradientField_ = grad(gradientMethod_);
 }
 
 template<typename Tp>
@@ -542,38 +582,43 @@ inline void Field<Tp>::writToTecplot(const std::string& fileName, Mesh::Dimensio
                 ofs << ",et=quadrilateral" << std::endl;
 
             }
-
-
         }
+    }
+    else if (dim == Mesh::Dimension::THREE_D)   // 三维，挖坑
+    {
+
     }
 }
 
 template<typename Tp>
 inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* Vector<Scalar>())>
 {
-    using ULL = unsigned long long;
     if (!getFaceField().isValid() && !isBoundaryConditionValid())
     {
         std::cerr << "Field::grad() Error: Field is not valid." << std::endl;
         throw std::runtime_error("Field is not valid");
     }
+
+    using ULL = unsigned long long;
+
     CellField<decltype(Tp()* Vector<Scalar>())> resultField(getName(), getMesh());
     resultField.setValue(decltype(Tp() * Vector<Scalar>()){});  // 对齐初始化（设置为有效）
     const FaceField<Tp>& currentFaceField = getFaceField();
     const std::vector<Cell>& cells = getMesh()->getCells();
     const std::vector<Face>& faces = getMesh()->getFaces();
+
     if (method == GradientMethod::GAUSS_GREEN)
     {
         if (getMesh()->getDimension() == Mesh::Dimension::TWO_D)
         {
-            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+            for (ULL i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
             {
                 const Cell& cell = cells[i];
                 // 获取当前单元各个面的id
-                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // const std::vector<ULL>& faceIds = cell.getFaceIndexes();
                 // 定义总的phi * S_f
                 decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
-                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+                for (ULL j : cell.getFaceIndexes())       // 对每个面的Phi * S_f加和
                 {
                     // 跳过empty面，如果是else if中三维网格不判断
                     if (j >= getMesh()->getEmptyFaceIndexesPair().first &&
@@ -591,14 +636,14 @@ inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* V
         }
         else if (getMesh()->getDimension() == Mesh::Dimension::THREE_D)
         {
-            for (int i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
+            for (ULL i = 0; i < cells.size(); ++i)  // 计算每个单元的梯度并赋值
             {
                 const Cell& cell = cells[i];
                 // 获取当前单元各个面的id
-                const std::vector<ULL>& faceIds = cell.getFaceIndexes();
+                // const std::vector<ULL>& faceIds = cell.getFaceIndexes();
                 // 定义总的phi * S_f
                 decltype(Tp() * Vector<Scalar>()) total_Phi_Sf{};
-                for (ULL j : faceIds)       // 对每个面的Phi * S_f加和
+                for (ULL j : cell.getFaceIndexes())       // 对每个面的Phi * S_f加和
                 {
                     const Face& face = faces[j];
                     Vector<Scalar> Sf = face.getArea() * face.getNormal();
@@ -608,10 +653,16 @@ inline auto Field<Tp>::grad(GradientMethod method) -> CellField<decltype(Tp()* V
                 resultField[i] = total_Phi_Sf / cell.getVolume();
             }
         }
+        else
+        {
+            std::cerr << "Field::grad() Error: Dimension not supported." << std::endl;
+            throw std::runtime_error("Dimension not supported");
+        }
         return resultField;
     }
-    // else if (method == GradientMethod::LEAST_SQUARES)     // 挖坑
-    // {
-    // }
+    else if (method == GradientMethod::LEAST_SQUARES)     // 挖坑
+    {
+        return resultField;
+    }
     return resultField;
 }
