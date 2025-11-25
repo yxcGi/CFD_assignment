@@ -12,51 +12,71 @@ int main()
 {
 
 
-    #if 0
-        try
+#if 1
+    try
+    {
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+
+        SparseMatrix<Scalar> A_b(&mesh);
+        A_b.setValue(0, 0, 99);
+        A_b.setValue(0, 1, 99);
+        // A_b.setValue(0, 2, 99);
+        // A_b.setValue(0, 3, 99);
+        // A_b.setValue(0, 4, 99);
+
+        // 打印第一行前5元素
+        for (int i = 0; i < 5; i++)
         {
-            Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
-
-            SparseMatrix<Scalar> A_b(&mesh);
-            A_b.printMatrix();
+            std::cout << A_b.at(0, i) << " ";
         }
-        catch (std::exception& e)
-        {
-            std::cerr << "Exception: " << e.what() << std::endl;
-        }
-    #endif
+        std::cout << std::endl;
+
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+#endif
 
 
 
 
 
-    #if 1
-        try
-        {
-            using Scalar = double;
-            std::vector<std::vector<Scalar>> A{
-                { 0, 0, 0, 0, 0 },
-                { 0, 1, 0, 0, 0 },
-                { 0, 0, 0, 0, 0 },
-                { 2, 0, 0, 0, 0 },
-                { 0, 0, 0, 4, 0 }
-            };
+#if 0
+    try
+    {
+        using Scalar = double;
+        std::vector<std::vector<Scalar>> A{
+            { 0, 0, 0, 0, 0 },
+            { 0, 1, 0, 0, 0 },
+            { 0, 0, 0, 0, 0 },
+            { 2, 0, 0, 0, 0 },
+            { 0, 0, 0, 4, 0 }
+        };
 
-            SparseMatrix<Scalar> A_sparse(A);
+        std::vector<std::vector<Scalar>> B{
+            { 0, 0 },
+            { 1, 0 }
+        };
 
-            A_sparse.setValue(1, 1, 92);
-            A_sparse.setValue(3, 0, 9);
-            A_sparse.addValue(1, 1, 10);
-            A_sparse.addValue(3, 0, 100);
-            std::cout << A_sparse(1, 1) << std::endl;
+        SparseMatrix<Scalar> B_sparse(B);
+        B_sparse.printMatrix();
+        B_sparse.compress();
 
-            A_sparse.printMatrix();
-        }
-        catch (std::exception& e)
-        {
-            std::cerr << "Exception: " << e.what() << std::endl;
-        }
-    #endif
+        // B_sparse.setValue(0, 0, 99);
+        // B_sparse.setValue(0, 1, 99);
+        B_sparse.setValue(1, 0, 99);
+        // B_sparse.setValue(1, 1, 99);
+        
+        B_sparse.printMatrix();
+
+        
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+#endif
 
 #if 0
     try

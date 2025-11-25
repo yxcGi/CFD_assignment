@@ -3,8 +3,6 @@
 
 
 
-
-
 #include <vector>
 #include "Mesh.h"
 #include <queue>
@@ -24,8 +22,8 @@ class SparseMatrix
     inline static int PRECISION = 4;    // 保留小数位数
 public:
     SparseMatrix() = default;
-    SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化(构造后进行压缩，之后无法访问0元素区域)
-    SparseMatrix(const Mesh* mesh);     // 通过读取网格信息初始化(给相应位置留空位)
+    SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化(拷贝一份二维数组，还未压缩)
+    SparseMatrix(Mesh* mesh);     // 通过读取网格信息初始化(给相应位置留空位)
 
 public:
     // 设置输出宽度
@@ -35,14 +33,17 @@ public:
 
 public:
     // 初始化函数
-    void init(const std::vector<std::vector<Tp>>& matrix);
+    void compress();
     void init(const Mesh* mesh);
+    void init(const std::vector<std::vector<Tp>>& matrix);
     // 打印
     void printMatrix() const;
     // 设置系数矩阵i, j元素值
     void setValue(ULL i, ULL j, Tp value);
     // 添加矩阵元素
     void addValue(ULL i, ULL j, Tp value);
+    // 查看特定位置元素，只读
+    Tp at(ULL i, ULL j) const;
 
 
     // 获取矩阵元素，括号重载
@@ -57,7 +58,10 @@ private:
     std::vector<ULL> colIndexs_;     // 每个元素列索引, 与values一一对应
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
+    std::vector<std::vector<Tp>> unCompressedMatrix_;   // 未压缩的矩阵
+    Mesh* mesh_{ nullptr };
     bool isValid_{ false };         // 是否有效
+    bool isCompressed_{ false };    // 是否压缩
 };
 
 
@@ -67,12 +71,24 @@ private:
 template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix)
     : size_(matrix.size())
+    , unCompressedMatrix_(matrix)
 {
-    init(matrix);
+    // 检查是否为方阵，非方阵抛出异常
+    for (const std::vector<Tp>& row : matrix)
+    {
+        if (row.size() != size_)
+        {
+            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not square" << std::endl;
+            throw std::invalid_argument("matrix is not square");
+        }
+    }
+    isValid_ = true;
 }
 
+
 template<typename Tp>
-inline SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh)
+inline SparseMatrix<Tp>::SparseMatrix(Mesh* mesh)
+    : mesh_(mesh)
 {
     init(mesh);
 }
@@ -113,23 +129,22 @@ inline void SparseMatrix<Tp>::setPrecision(int precision)
 }
 
 template<typename Tp>
-inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
+inline void SparseMatrix<Tp>::compress()
 {
-    if (isValid_)
+    if (!isValid_)  // 矩阵无效
     {
-        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix) Error: matrix is already initialized" << std::endl;
-        throw std::invalid_argument("matrix is already initialized");
+        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
     }
-    
-    // 判断是否为方阵
-    for (const std::vector<Tp>& row : matrix)
+
+    if (isCompressed_)  // 矩阵已压缩则不能压缩
     {
-        if (row.size() != size_)
-        {
-            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not square" << std::endl;
-            throw std::invalid_argument("matrix is not square");
-        }
+        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix) Error: matrix is already compressed" << std::endl;
+        throw std::invalid_argument("matrix is already compressed");
     }
+
+
+    // 开始对二维数数组进行压缩
     rowPointer_.reserve(size_ + 1);
 
     // 开始构造
@@ -138,7 +153,7 @@ inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
     {
         for (ULL j = 0; j < size_; ++j)
         {
-            const Tp ele = matrix[i][j];
+            const Tp ele = unCompressedMatrix_[i][j];
             if (std::abs(ele) > EPSILON)   // 非0元素
             {
                 values_.emplace_back(ele);
@@ -148,11 +163,8 @@ inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
         // 每行结束后记录下一行的起始值（对于空行依然，成立）
         rowPointer_.emplace_back(colIndexs_.size());
     }
-    // if (!values_.empty())
-    // {
-    //     allZero_ = false;
-    // }
-    isValid_ = true;
+    isCompressed_ = true;
+    std::cout << "The matrix has been compressed" << std::endl;
 }
 
 template<typename Tp>
@@ -163,7 +175,7 @@ inline void SparseMatrix<Tp>::init(const Mesh* mesh)
         std::cerr << "SparseMatrix<Tp>::init(const Mesh* mesh) Error: matrix is already initialized" << std::endl;
         throw std::invalid_argument("matrix is already initialized");
     }
-    
+
     if (!mesh->isValid())
     {
         std::cerr << "SparseMatrix<Tp>::SparseMatrix(const Mesh* mesh) Error: mesh is not valid" << std::endl;
@@ -242,6 +254,25 @@ inline void SparseMatrix<Tp>::init(const Mesh* mesh)
         ++currentCellIndex;
     }
     isValid_ = true;
+    isCompressed_ = true;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
+{
+    size_ = matrix.size();
+    unCompressedMatrix_ = matrix;
+
+    // 检查是否为方阵，非方阵抛出异常
+    for (const std::vector<Tp>& row : matrix)
+    {
+        if (row.size() != size_)
+        {
+            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not square" << std::endl;
+            throw std::invalid_argument("matrix is not square");
+        }
+    }
+    isValid_ = true;
 }
 
 template<typename Tp>
@@ -265,47 +296,61 @@ inline void SparseMatrix<Tp>::printMatrix() const
 
 
     std::cout << std::fixed << std::setprecision(PRECISION);    // 设置保留小数位数
-    for (ULL i = 0; i < size_; ++i)
+    if (!isCompressed_) // 如果未压缩直接通过二维数组进行打印
     {
-        // 判断本行是否为空行(全0), 若为空行直接打印本行
-        if (rowPointer_[i] == rowPointer_[i + 1])   // 空行
+        for (const std::vector<Tp>& row : unCompressedMatrix_)
         {
-            for (ULL j = 0; j < size_; ++j)
+            for (Tp ele : row)
             {
-                std::cout << std::setw(WIDTH) << 0.0;
+                std::cout << std::setw(WIDTH) << ele;
             }
             std::cout << "\n";
         }
-        else        // 非空行f
+    }
+    else    // 压缩矩阵打印
+    {
+        for (ULL i = 0; i < size_; ++i)
         {
-            // 打印本行第一个非0元素前的0，保留四位小数
-            ULL j = 0;
-            for (; j < colIndexs_[rowPointer_[i]]; j++)
+            // 判断本行是否为空行(全0), 若为空行直接打印本行
+            if (rowPointer_[i] == rowPointer_[i + 1])   // 空行
             {
-                std::cout << std::setw(WIDTH) << 0.0;
-            }
-
-            // 开始依次判断并打印本行非0元素和0元素
-            for (ULL index = rowPointer_[i];
-                index < rowPointer_[i + 1]; ++j)
-            {
-                if (j == colIndexs_[index])  // 该列为非0元素
-                {
-                    std::cout << std::setw(WIDTH) << values_[index];
-                    ++index;
-                }
-                else
+                for (ULL j = 0; j < size_; ++j)
                 {
                     std::cout << std::setw(WIDTH) << 0.0;
                 }
+                std::cout << "\n";
             }
-
-            // 填充本行后面的0
-            for (; j < size_; ++j)
+            else        // 非空行f
             {
-                std::cout << std::setw(WIDTH) << 0.0;
+                // 打印本行第一个非0元素前的0，保留四位小数
+                ULL j = 0;
+                for (; j < colIndexs_[rowPointer_[i]]; j++)
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+
+                // 开始依次判断并打印本行非0元素和0元素
+                for (ULL index = rowPointer_[i];
+                    index < rowPointer_[i + 1]; ++j)
+                {
+                    if (j == colIndexs_[index])  // 该列为非0元素
+                    {
+                        std::cout << std::setw(WIDTH) << values_[index];
+                        ++index;
+                    }
+                    else
+                    {
+                        std::cout << std::setw(WIDTH) << 0.0;
+                    }
+                }
+
+                // 填充本行后面的0
+                for (; j < size_; ++j)
+                {
+                    std::cout << std::setw(WIDTH) << 0.0;
+                }
+                std::cout << "\n";
             }
-            std::cout << "\n";
         }
     }
     std::cout.copyfmt(oldState);    // 恢复输出格式
@@ -314,52 +359,55 @@ inline void SparseMatrix<Tp>::printMatrix() const
 template<typename Tp>
 inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
 {
-    if (!isValid_)
-    {
-        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: matrix is not valid" << std::endl;
-        throw std::invalid_argument("matrix is not valid");
-    }
-
-    // 判断索引是否越界
-    if (i >= size_ || j >= size_)
-    {
-        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: index out of range" << std::endl;
-        throw std::out_of_range("index out of range");
-    }
-
-    // 判断是否存在第i行元素
-    if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
-    {
-        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
-        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
-    }
-
-    // // 判断是否存在第i行的第j列元素, index为colIndexs_的索引值
-    // if (j < colIndexs_[rowPointer_[i]] || j > colIndexs_[rowPointer_[i + 1] - 1])
-    // {
-    //     std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
-    //     throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
-    // }
-
-    // 寻找第j列元素
-    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
-    {
-        if (colIndexs_[index] == j)     // 存在A(i,j)元素
-        {
-            values_[index] = value;
-            return;
-        }
-    }
-
-    // 不存在第j列元素
-    std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: column " << j << " is not exist" << std::endl;
-    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+    (*this)(i, j) = value;
 }
 
 template<typename Tp>
 inline void SparseMatrix<Tp>::addValue(ULL i, ULL j, Tp value)
 {
     (*this)(i, j) += value;
+}
+
+template<typename Tp>
+inline Tp SparseMatrix<Tp>::at(ULL i, ULL j) const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::at(ULL i, ULL j) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    if (i >= size_ || j >= size_)
+    {
+        std::cerr << "SparseMatrix<Tp>::at(ULL i, ULL j) Error: index out of range" << std::endl;
+        throw std::out_of_range("index out of range");
+    }
+
+    if (!isCompressed_)
+    {
+        return unCompressedMatrix_[i][j];
+    }
+    else
+    {
+        // 判断是否存在第i行元素
+        if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
+        {
+            std::cerr << "SparseMatrix<Tp>::at(ULL i, ULL j) Error: row " << i << " is empty" << std::endl;
+            throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+        }
+
+        // 寻找第j列元素
+        for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+        {
+            if (colIndexs_[index] == j)
+            {
+                return values_[index];
+            }
+        }
+
+        // 若未找到则返回0
+        return Tp(0);
+    }
 }
 
 template<typename Tp>
@@ -379,25 +427,32 @@ inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
         throw std::out_of_range("index out of range");
     }
 
-    // 判断是否存在第i行元素
-    if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
+    if (!isCompressed_) // 未被压缩直接修改底层二维数组
     {
-        std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
-        throw std::invalid_argument("row " + std::to_string(i) + " is empty");  
+        return unCompressedMatrix_[i][j];
     }
-
-    // 寻找第j列元素
-    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+    else
     {
-        if (colIndexs_[index] == j)
+        // 判断是否存在第i行元素
+        if (rowPointer_[i] == rowPointer_[i + 1])   // 该行不存在元素，无法设置
         {
-            return values_[index];
+            std::cerr << "SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value) Error: row " << i << " is empty" << std::endl;
+            throw std::invalid_argument("row " + std::to_string(i) + " is empty");
         }
-    }
 
-    // 走到这说明不存在j列元素
-    std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
-    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+        // 寻找第j列元素
+        for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+        {
+            if (colIndexs_[index] == j)
+            {
+                return values_[index];
+            }
+        }
+
+        // 走到这说明不存在j列元素
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
+        throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+    }
 }
 
 template<typename Tp>
@@ -415,25 +470,32 @@ inline const Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
         throw std::out_of_range("index out of range");
     }
 
-    // 是否存在该行元素
-    if (rowPointer_[i] == rowPointer_[i + 1])
+    if (!isCompressed_) // 未被压缩直接返回底层二维数组元素
     {
-        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: row " << i << " is empty" << std::endl;
-        throw std::invalid_argument("row " + std::to_string(i) + " is empty");
+        return unCompressedMatrix_[i][j];
     }
-
-    // 遍历该行元素
-    for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+    else    // 已被压缩只能返回非0元素，否则抛出异常
     {
-        if (colIndexs_[index] == j)
+        // 是否存在该行元素
+        if (rowPointer_[i] == rowPointer_[i + 1])
         {
-            return values_[index];
+            std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: row " << i << " is empty" << std::endl;
+            throw std::invalid_argument("row " + std::to_string(i) + " is empty");
         }
-    }
 
-    // 不存在该j列元素
-    std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
-    throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+        // 遍历该行元素
+        for (ULL index = rowPointer_[i]; index < rowPointer_[i + 1]; ++index)
+        {
+            if (colIndexs_[index] == j)
+            {
+                return values_[index];
+            }
+        }
+
+        // 不存在该j列元素
+        std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
+        throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
+    }
 }
 
 
