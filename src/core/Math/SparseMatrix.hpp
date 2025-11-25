@@ -24,6 +24,7 @@ public:
     SparseMatrix() = default;
     SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化(拷贝一份二维数组，还未压缩)
     SparseMatrix(Mesh* mesh);     // 通过读取网格信息初始化(给相应位置留空位)
+    SparseMatrix(ULL size);
 
 public:
     // 设置输出宽度
@@ -92,6 +93,13 @@ inline SparseMatrix<Tp>::SparseMatrix(Mesh* mesh)
 {
     init(mesh);
 }
+
+template<typename Tp>
+inline SparseMatrix<Tp>::SparseMatrix(ULL size)
+    : size_(size)
+    , unCompressedMatrix_(size, std::vector<Tp>(size))
+    , isValid_(true)
+{}
 
 template<typename Tp>
 inline void SparseMatrix<Tp>::setWidth(int width)
@@ -165,6 +173,9 @@ inline void SparseMatrix<Tp>::compress()
     }
     isCompressed_ = true;
     std::cout << "The matrix has been compressed" << std::endl;
+    // 释放二维数组内存
+    unCompressedMatrix_.clear();
+    unCompressedMatrix_.shrink_to_fit();
 }
 
 template<typename Tp>
