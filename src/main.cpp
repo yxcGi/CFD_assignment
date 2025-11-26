@@ -84,25 +84,27 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
         phi.setValue(
             [](Scalar x, Scalar y, Scalar z) {
-                return std::sin(100 * x) * std::log(x + y + 1);
+                return 200 * (x * x + y * y);
             }
         );
 
-        phi.setBoundaryCondition("inlet", 0, 1, 0);
-        phi.setBoundaryCondition("outlet", 0, 1, 0);
-        phi.setBoundaryCondition("upperWall", 0, 1, 0);
-        phi.setBoundaryCondition("lowerWall", 0, 1, 0);
+        phi.setBoundaryCondition("fixedWalls", 0, 1, 0);
+        phi.setBoundaryCondition("movingWall", 1, 0, 200);
+        // phi.setBoundaryCondition("upperWall", 0, 1, 0);
+        // phi.setBoundaryCondition("lowerWall", 0, 1, 0);
         // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
 
+        phi.writeToFile("phi.dat");
+        
         Field<Vector<Scalar>> gradPhi(grad(phi));
         // gradPhi.writeToFile("phi.dat");
 
