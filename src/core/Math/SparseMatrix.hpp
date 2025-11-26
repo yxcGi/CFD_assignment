@@ -50,6 +50,9 @@ public:
     Tp& getB(ULL index);
     Tp getB(ULL index) const;
 
+    // 获取网格
+    Mesh* getMesh() const;
+
     // 查看特定位置元素，只读
     Tp at(ULL i, ULL j) const;
 
@@ -57,6 +60,10 @@ public:
     // 获取矩阵元素，括号重载
     Tp& operator()(ULL i, ULL j);
     const Tp& operator()(ULL i, ULL j) const;
+
+
+    // 是否有效
+    bool isValid() const;
 
 private:
 
@@ -505,6 +512,17 @@ inline Tp SparseMatrix<Tp>::getB(ULL index) const
     throw std::out_of_range("index out of range");
 }
 
+template<typename Tp>
+inline Mesh* SparseMatrix<Tp>::getMesh() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getMesh() Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+    return mesh_;
+}
+
 
 template<typename Tp>
 inline Tp SparseMatrix<Tp>::at(ULL i, ULL j) const
@@ -634,6 +652,12 @@ inline const Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
         std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
         throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
     }
+}
+
+template<typename Tp>
+inline bool SparseMatrix<Tp>::isValid() const
+{
+    return isValid_;
 }
 
 
