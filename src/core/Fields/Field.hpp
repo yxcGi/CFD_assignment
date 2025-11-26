@@ -69,6 +69,8 @@ public:
     CellField<Tp>& getCellField();
     const CellField<Tp>& getCellField_0() const;
     CellField<Tp>& getCellField_0();
+    const CellField<decltype(Tp()* Vector<Scalar>())>& getCellGradientField() const;
+    CellField<decltype(Tp()* Vector<Scalar>())>& getCellGradientField();
 
     std::string getName() const;
     Mesh* getMesh() const;
@@ -224,6 +226,26 @@ inline CellField<Tp>& Field<Tp>::getCellField_0()
         return cellField_0_;
     }
     return cellField_0_;
+}
+
+template<typename Tp>
+inline const CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() const
+{
+    if (isValid())
+    {
+        return cellGradientField_;
+    }
+    return cellGradientField_;
+}
+
+template<typename Tp>
+inline CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField()
+{
+    if (isValid())
+    {
+        return cellGradientField_;
+    }
+    return cellGradientField_;
 }
 
 template<typename Tp>
