@@ -6,7 +6,6 @@
 #include <vector>
 #include "Mesh.h"
 #include <queue>
-#include <fstream>
 
 /**
  * @brief 采用CSR方法存储稀疏矩阵，仅为方阵
@@ -35,14 +34,22 @@ public:
 public:
     // 初始化函数
     void compress();
-    void init(const Mesh* mesh);
+    void init(Mesh* mesh);
     void init(const std::vector<std::vector<Tp>>& matrix);
     // 打印
     void printMatrix() const;
     // 设置系数矩阵i, j元素值
     void setValue(ULL i, ULL j, Tp value);
-    // 添加矩阵元素
     void addValue(ULL i, ULL j, Tp value);
+    // 设置右侧向量
+    void setB(const std::vector<Tp>& b);
+    void setB(ULL index, Tp value);
+    void addB(ULL index, Tp value);
+    std::vector<Tp>& getB();
+    const std::vector<Tp>& getB() const;
+    Tp& getB(ULL index);
+    Tp getB(ULL index) const;
+
     // 查看特定位置元素，只读
     Tp at(ULL i, ULL j) const;
 
@@ -60,6 +67,7 @@ private:
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
     std::vector<std::vector<Tp>> unCompressedMatrix_;   // 未压缩的矩阵
+    std::vector<Tp> b_;             // 右侧向量 Ax = b
     Mesh* mesh_{ nullptr };
     bool isValid_{ false };         // 是否有效
     bool isCompressed_{ false };    // 是否压缩
@@ -73,6 +81,7 @@ template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix)
     : size_(matrix.size())
     , unCompressedMatrix_(matrix)
+    , b_(matrix.size())
 {
     // 检查是否为方阵，非方阵抛出异常
     for (const std::vector<Tp>& row : matrix)
@@ -89,7 +98,6 @@ inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix
 
 template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(Mesh* mesh)
-    : mesh_(mesh)
 {
     init(mesh);
 }
@@ -179,7 +187,7 @@ inline void SparseMatrix<Tp>::compress()
 }
 
 template<typename Tp>
-inline void SparseMatrix<Tp>::init(const Mesh* mesh)
+inline void SparseMatrix<Tp>::init(Mesh* mesh)
 {
     if (isValid_)
     {
@@ -195,6 +203,9 @@ inline void SparseMatrix<Tp>::init(const Mesh* mesh)
 
 
     size_ = mesh->getCellNumber();
+    mesh_ = mesh;
+    b_.resize(size_);
+
 
     // 先取出必要的变量
     const std::vector<Face>& faces = mesh->getFaces();
@@ -378,6 +389,122 @@ inline void SparseMatrix<Tp>::addValue(ULL i, ULL j, Tp value)
 {
     (*this)(i, j) += value;
 }
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setB(const std::vector<Tp>& b)
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::setB(const std::vector<Tp>& b) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    // 判断长度合法
+    if (size_ != b.size())
+    {
+        std::cerr << "SparseMatrix<Tp>::setB(const std::vector<Tp>& b) Error: length of b is not equal to matrix size" << std::endl;
+        throw std::invalid_argument("length of b is not equal to matrix size");
+    }
+    b_ = b;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::setB(ULL index, Tp value)
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::setB(ULL index, Tp value) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    // 判断索引是否合法
+    if (index >= 0 && index < size_)
+    {
+        b_[index] = value;
+    }
+    
+    std::cerr << "SparseMatrix<Tp>::setB(ULL index, Tp value) Error: index out of range" << std::endl;
+    throw std::out_of_range("index out of range");
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::addB(ULL index, Tp value)
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::addB(ULL index, Tp value) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    if (index >= 0 && index < size_)
+    {
+        b_[index] += value;
+    }
+
+    std::cerr << "SparseMatrix<Tp>::addB(ULL index, Tp value) Error: index out of range" << std::endl;
+    throw std::out_of_range("index out of range");
+}
+
+template<typename Tp>
+inline std::vector<Tp>& SparseMatrix<Tp>::getB()
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getB() Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    return b_;
+}
+
+template<typename Tp>
+inline const std::vector<Tp>& SparseMatrix<Tp>::getB() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "const SparseMatrix<Tp>::getB() Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    return b_;
+}
+
+template<typename Tp>
+inline Tp& SparseMatrix<Tp>::getB(ULL index)
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getB(ULL index) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    if (index >= 0 && index < size_)
+    {
+        return b_[index];
+    }
+
+    std::cerr << "SparseMatrix<Tp>::getB(ULL index) Error: index out of range" << std::endl;
+    throw std::out_of_range("index out of range");
+}
+
+template<typename Tp>
+inline Tp SparseMatrix<Tp>::getB(ULL index) const
+{
+    if (!isValid_)
+    {
+        std::cerr << "const SparseMatrix<Tp>::getB(ULL index) Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+
+    if (index >= 0 && index < size_)
+    {
+        return b_[index];
+    }
+
+    std::cerr << "SparseMatrix<Tp>::getB(ULL index) Error: index out of range" << std::endl;
+    throw std::out_of_range("index out of range");
+}
+
 
 template<typename Tp>
 inline Tp SparseMatrix<Tp>::at(ULL i, ULL j) const
