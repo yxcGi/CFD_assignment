@@ -373,7 +373,7 @@ void Mesh::readBoundaryPatch(const std::string& boundaryPath)
         }
     }
 
-    
+
 
     /* 测试用 */
     // std::cout << "Boundary Patch " << i + 1 << ": " << std::endl;
@@ -820,26 +820,74 @@ void Mesh::buildCellsFromFaces()
     cells_.resize(maxCellIndex + 1);    // 索引从0开始，大小为最大索引+1
 
     // 遍历所有面
-    for (ULL i = 0; i < faces_.size(); ++i)
+    if (getDimension() == Dimension::THREE_D)
     {
-        ULL ownerIndex = faces_[i].getOwnerIndex();
-        LL neighborIndex = faces_[i].getNeighborIndex();
+        for (ULL i = 0; i < faces_.size(); ++i)
+        {
+            ULL ownerIndex = faces_[i].getOwnerIndex();
+            LL neighborIndex = faces_[i].getNeighborIndex();
 
-        if (neighborIndex == -1)    // 说明是边界面
-        {
-            internalFaceIndexes_.emplace_back(i);
-            cells_[ownerIndex].addFaceIndex(i);
-            boundaryCellIndexes_.emplace(ownerIndex);
-        }
-        else                        // 内部面
-        {
-            boundaryFaceIndexes_.emplace_back(i);
-            cells_[ownerIndex].addFaceIndex(i);
-            cells_[neighborIndex].addFaceIndex(i);
-            internalCellIndexes_.emplace(ownerIndex);
-            internalCellIndexes_.emplace(neighborIndex);
+            if (neighborIndex == -1)    // 说明是边界面
+            {
+                boundaryFaceIndexes_.emplace_back(i);
+                cells_[ownerIndex].addFaceIndex(i);
+                boundaryCellIndexes_.emplace(ownerIndex);
+            }
+            else                        // 内部面
+            {
+                boundaryFaceIndexes_.emplace_back(i);
+                cells_[ownerIndex].addFaceIndex(i);
+                cells_[neighborIndex].addFaceIndex(i);
+                internalCellIndexes_.emplace(ownerIndex);
+                internalCellIndexes_.emplace(neighborIndex);
+            }
         }
     }
+    else if (getDimension() == Dimension::TWO_D)
+    {
+        // 找到empty对应的boundaryPatch
+        const auto& it = std::find_if(
+            boundaryPatches_.begin(), boundaryPatches_.end(),
+            [](const auto& patchMap) {
+                return patchMap.second.getType() ==
+                    BoundaryPatch::BoundaryType::EMPTY;
+            }
+        );
+        if (it == boundaryPatches_.end())   // 未找到则报错
+        {
+            std::cerr << "Mesh::buildCellsFromFaces() Error: Cannot find empty boundary patch." << std::endl;
+            throw std::runtime_error("Mesh::buildCellsFromFaces() Error: Cannot find empty boundary patch.");
+        }
+
+        // 获取empty的起始索引和终止索引
+        ULL startId = it->second.getStartFace();
+        ULL endId = startId + it->second.getNFace();
+
+        for (ULL i = 0; i < faces_.size(); ++i)
+        {
+            ULL ownerIndex = faces_[i].getOwnerIndex();
+            LL neighborIndex = faces_[i].getNeighborIndex();
+
+            if (neighborIndex == -1)    // 边界面
+            {
+                if (i < startId || i >= endId)  // 非empty边界界面
+                {
+                    boundaryFaceIndexes_.emplace_back(i);
+                }
+                cells_[ownerIndex].addFaceIndex(i);
+                boundaryCellIndexes_.emplace(ownerIndex);
+            }
+            else                        // 内部面
+            {
+                boundaryFaceIndexes_.emplace_back(i);
+                cells_[ownerIndex].addFaceIndex(i);
+                cells_[neighborIndex].addFaceIndex(i);
+                internalCellIndexes_.emplace(ownerIndex);
+                internalCellIndexes_.emplace(neighborIndex);
+            }
+        }
+    }
+
 
     // 测试用
     // std::cout << "Internal Cell Indices: ";

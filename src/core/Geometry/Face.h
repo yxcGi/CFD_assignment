@@ -15,7 +15,7 @@ class Face
     using LL = long long;
 public:
     Face() = delete;
-    Face(const std::vector<ULL>& pointIndexs, ULL ownerIndex, ULL neighborIndex = -1);
+    Face(const std::vector<ULL>& pointIndexs, ULL ownerIndex, LL neighborIndex = -1);
     Face(const Face& face) = default;
     Face(Face&&) noexcept = default;
     Face& operator=(const Face& rhs);

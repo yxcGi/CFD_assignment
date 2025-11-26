@@ -15,6 +15,7 @@ template <typename Tp>
 class SparseMatrix
 {
     using ULL = unsigned long long;
+    using LL = long long;
     constexpr static double EPSILON = 1e-10;
     inline static int WIDTH = 10;       // 输出宽度 
     // 设置小数位数
@@ -246,7 +247,7 @@ inline void SparseMatrix<Tp>::init(Mesh* mesh)
     // 构造colIndex_与rowPointer_
     ULL currentCellIndex = 0;  // 记录当前遍历到第几个单元（第几行）
     std::priority_queue<ULL, std::vector<ULL>, std::greater<>> neighborCellQueue;       // 小根堆
-    ULL neighborCellIndex = -1; // 存储当前单元的邻居单元号
+    LL neighborCellIndex = -1; // 存储当前单元的邻居单元号
     for (const Cell& cell : mesh->getCells())
     {
         // 通过便利cell的所有面找到与当前cell邻居单元号（需要按顺序）
@@ -428,6 +429,7 @@ inline void SparseMatrix<Tp>::setB(ULL index, Tp value)
     if (index >= 0 && index < size_)
     {
         b_[index] = value;
+        return;
     }
     
     std::cerr << "SparseMatrix<Tp>::setB(ULL index, Tp value) Error: index out of range" << std::endl;
@@ -446,6 +448,7 @@ inline void SparseMatrix<Tp>::addB(ULL index, Tp value)
     if (index >= 0 && index < size_)
     {
         b_[index] += value;
+        return;
     }
 
     std::cerr << "SparseMatrix<Tp>::addB(ULL index, Tp value) Error: index out of range" << std::endl;
