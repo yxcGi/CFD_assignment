@@ -1,4 +1,5 @@
 #include <iostream>
+#include "Laplician.hpp"
 #include "Vector.hpp"
 #include "Geometry/Mesh.h"
 #include "Tensor.hpp"
@@ -12,7 +13,7 @@ int main()
 {
 
 
-#if 1
+#if 0
     try
     {
         Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
@@ -78,7 +79,7 @@ int main()
     }
 #endif
 
-#if 0
+#if 1
     try
     {
         using Scalar = double;
@@ -103,7 +104,13 @@ int main()
 
 
         Field<Vector<Scalar>> gradPhi(grad(phi));
-        gradPhi.writeToFile("phi.dat");
+        // gradPhi.writeToFile("phi.dat");
+
+        SparseMatrix<Scalar> A_b(&mesh);
+        FaceField<Scalar> gamma("gamma", &mesh);
+        gamma.setValue(10);
+
+        fvm::Laplician(A_b, gamma, phi);
 
         // getchar();
     }

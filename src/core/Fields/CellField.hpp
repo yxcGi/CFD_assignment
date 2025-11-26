@@ -112,6 +112,12 @@ inline FaceField<Tp> CellField<Tp>::cellToFace(interpolation::Scheme scheme) con
     // using BoundaryConditionMap = std::unordered_map<std::string, BoundaryCondition<T>>;
     for (const auto& [name, bc] : this->boundaryConditions_)
     {
+        // 如果是empty，则跳过
+        if (bc.getType() == BoundaryPatch::BoundaryType::EMPTY)
+        {
+            continue;
+        }
+
         ULL nFace = bc.getNFace();
         ULL startFace = bc.getStartFace();
 

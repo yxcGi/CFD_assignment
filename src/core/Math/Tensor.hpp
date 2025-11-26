@@ -42,7 +42,9 @@ public:
 
     // 张量与矢量
     template<typename U>
-    Vector<Scalar> operator*(const Vector<U>& rhs) const;   // Tensor * Vector
+    Vector<Scalar> operator&(const Vector<U>& rhs) const;   // Tensor * Vector
+    template<typename U1, typename U2>
+    friend Vector<Scalar> operator&(const Vector<U1>& lhs, const Tensor<U2>& rhs);      // Vector * Tensor
 
     // 张量与标量
     Tensor<Tp> operator*(const Scalar rhs) const;           // Tensor * Scalar
@@ -172,7 +174,7 @@ inline Tp Tensor<Tp>::operator&&(const Tensor<Tp>& rhs) const
 
 template<typename Tp>
 template<typename U>
-inline Vector<typename Tensor<Tp>::Scalar> Tensor<Tp>::operator*(const Vector<U>& rhs) const
+inline Vector<typename Tensor<Tp>::Scalar> Tensor<Tp>::operator&(const Vector<U>& rhs) const
 {
     return Vector<Scalar>(
         xx_ * rhs.x() + xy_ * rhs.y() + xz_ * rhs.z(),
@@ -277,6 +279,16 @@ inline Tensor<Scalar> operator*(const Vector<U1>& lhs, const Vector<U2>& rhs)   
         lhs.x() * rhs.x(), lhs.x() * rhs.y(), lhs.x() * rhs.z(),
         lhs.y() * rhs.x(), lhs.y() * rhs.y(), lhs.y() * rhs.z(),
         lhs.z() * rhs.x(), lhs.z() * rhs.y(), lhs.z() * rhs.z()
+    );
+}
+
+template<typename U1, typename U2>
+inline Vector<Scalar> operator&(const Vector<U1>& lhs, const Tensor<U2>& rhs)
+{
+    return Vector<Scalar>(
+        lhs.x() * rhs.xx_ + lhs.y() * rhs.yx_ + lhs.z() * rhs.zx_,
+        lhs.x() * rhs.xy_ + lhs.y() * rhs.yy_ + lhs.z() * rhs.zy_,
+        lhs.x() * rhs.xz_ + lhs.y() * rhs.yz_ + lhs.z() * rhs.zz_
     );
 }
 

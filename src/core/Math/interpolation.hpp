@@ -6,6 +6,8 @@
 
 
 #include <iostream>
+#include <type_traits>
+#include "Vector.hpp"
 
 
 namespace interpolation
@@ -28,25 +30,65 @@ namespace interpolation
  * @tparam T 数据类型
  */
 template <typename Tp>
-class Interpolation
+class Interpolation;
+
+
+template <>
+class Interpolation<Scalar>
 {
     using Scalar = double;
 public:
     // 传两个值就是算数平均
     // T operator()(const T& phi1, const T& phi2);
-    Tp operator()(
-        const Tp& phi1, const Tp& phi2,
+    Scalar operator()(
+        const Scalar& phi1, const Scalar& phi2,
+        interpolation::Scheme scheme = interpolation::Scheme::LINEAR,
+        Scalar alpha = 0.5) const;
+};
+
+template <>
+class Interpolation<Vector<Scalar>>
+{
+    using Scalar = double;
+public:
+    // 传两个值就是算数平均
+    // T operator()(const T& phi1, const T& phi2);
+    Vector<Scalar> operator()(
+        const Vector<Scalar>& phi1, const Vector<Scalar>& phi2,
         interpolation::Scheme scheme = interpolation::Scheme::LINEAR,
         Scalar alpha = 0.5) const;
 };
 
 
 
-template<typename Tp>
-inline Tp Interpolation<Tp>::operator()(
-    const Tp& phi1, const Tp& phi2,
-    interpolation::Scheme scheme,
-    Scalar alpha) const
+
+// template<typename Tp>
+// inline Tp Interpolation<Tp>::operator()(
+//     const Tp& phi1, const Tp& phi2,
+//     interpolation::Scheme scheme,
+//     Scalar alpha) const
+// {
+//     // phi1 * (1 - alpha) + phi2 * alpha
+//     if (scheme == interpolation::Scheme::LINEAR)
+//     {
+//         return phi1 + alpha * (phi2 - phi1);
+//     }
+//     else if (scheme == interpolation::Scheme::HARMONIC_MEAN && std::is_same_v<Tp, Scalar>)
+//     {
+//         return phi1 * phi2 / (phi2 * alpha + phi1 * (1 - alpha));
+//     }
+//     else if (scheme == interpolation::Scheme::ARITHMETIC_MEAN)
+//     {
+//         return (phi1 + phi2) * 0.5;
+//     }
+//     std::cerr << "interpolation::Scheme not supported!" << std::endl;
+//     throw std::runtime_error("interpolation::Scheme not supported!");
+// }
+
+
+
+
+inline double Interpolation<double>::operator()(const Scalar& phi1, const Scalar& phi2, interpolation::Scheme scheme, Scalar alpha) const
 {
     // phi1 * (1 - alpha) + phi2 * alpha
     if (scheme == interpolation::Scheme::LINEAR)
@@ -65,6 +107,17 @@ inline Tp Interpolation<Tp>::operator()(
     throw std::runtime_error("interpolation::Scheme not supported!");
 }
 
-
-
+inline Vector<Scalar> Interpolation<Vector<Scalar>>::operator()(const Vector<Scalar>& phi1, const Vector<Scalar>& phi2, interpolation::Scheme scheme, Scalar alpha) const
+{
+    if (scheme == interpolation::Scheme::LINEAR)
+    {
+        return phi1 + alpha * (phi2 - phi1);
+    }
+    else if (scheme == interpolation::Scheme::ARITHMETIC_MEAN)
+    {
+        return (phi1 + phi2) * 0.5;
+    }
+    std::cerr << "interpolation::Scheme not supported!" << std::endl;
+    throw std::runtime_error("interpolation::Scheme not supported!");
+}
 #endif // INTERPOLATION_H_

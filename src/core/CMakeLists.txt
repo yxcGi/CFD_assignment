@@ -13,6 +13,7 @@ file(GLOB_RECURSE CORE_HEADERS
     Math/*.hpp
     Fields/*.h
     Fields/*.hpp
+    FVM/*.hpp
 )
 
 # 添加动态库
@@ -26,4 +27,6 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/Math
     ${CMAKE_CURRENT_SOURCE_DIR}/Fields
     ${CMAKE_CURRENT_SOURCE_DIR}/Fields/FieldOperators
+    ${CMAKE_CURRENT_SOURCE_DIR}/FVM
+    ${CORE_HEADERS}
 )

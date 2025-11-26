@@ -7,7 +7,7 @@ using Scalar = double;
 Face::Face(
     const std::vector<ULL>& pointIndexs,
     ULL ownerIndex,
-    ULL neighborIndex
+    LL neighborIndex
 )
     : pointNum_(pointIndexs.size())
     , ownerIndex_(ownerIndex)
