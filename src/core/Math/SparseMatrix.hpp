@@ -9,7 +9,7 @@
 
 /**
  * @brief 采用CSR方法存储稀疏矩阵，仅为方阵
- * @tparam Tp 一般为double，int 不会是Vector
+ * @tparam Tp 一般为double，int 不会是Vector，此类型为phi的类型和b的向量的类型，矩阵元素为Scalar
  */
 template <typename Tp>
 class SparseMatrix
@@ -22,7 +22,7 @@ class SparseMatrix
     inline static int PRECISION = 4;    // 保留小数位数
 public:
     SparseMatrix() = default;
-    SparseMatrix(const std::vector<std::vector<Tp>>& matrix);   // 直接用二维数组初始化(拷贝一份二维数组，还未压缩)
+    SparseMatrix(const std::vector<std::vector<Scalar>>& matrix);   // 直接用二维数组初始化(拷贝一份二维数组，还未压缩)
     SparseMatrix(Mesh* mesh);     // 通过读取网格信息初始化(给相应位置留空位)
     SparseMatrix(ULL size);
 
@@ -36,12 +36,12 @@ public:
     // 初始化函数
     void compress();
     void init(Mesh* mesh);
-    void init(const std::vector<std::vector<Tp>>& matrix);
+    void init(const std::vector<std::vector<Scalar>>& matrix);
     // 打印
     void printMatrix() const;
     // 设置系数矩阵i, j元素值
-    void setValue(ULL i, ULL j, Tp value);
-    void addValue(ULL i, ULL j, Tp value);
+    void setValue(ULL i, ULL j, Scalar value);
+    void addValue(ULL i, ULL j, Scalar value);
     // 设置右侧向量
     void setB(const std::vector<Tp>& b);
     void setB(ULL index, Tp value);
@@ -55,12 +55,12 @@ public:
     Mesh* getMesh() const;
 
     // 查看特定位置元素，只读
-    Tp at(ULL i, ULL j) const;
+    Scalar at(ULL i, ULL j) const;
 
 
     // 获取矩阵元素，括号重载
-    Tp& operator()(ULL i, ULL j);
-    const Tp& operator()(ULL i, ULL j) const;
+    Scalar& operator()(ULL i, ULL j);
+    const Scalar& operator()(ULL i, ULL j) const;
 
 
     // 是否有效
@@ -70,11 +70,11 @@ private:
 
 
 private:
-    std::vector<Tp> values_;        // 存储数据（行优先），大小为矩阵非0元素个数
+    std::vector<Scalar> values_;        // 存储数据（行优先），大小为矩阵非0元素个数
     std::vector<ULL> colIndexs_;     // 每个元素列索引, 与values一一对应
     std::vector<ULL> rowPointer_;   // 行指针，每一行起始元素的索引，大小为矩阵行数
     ULL size_;                      // 矩阵大小
-    std::vector<std::vector<Tp>> unCompressedMatrix_;   // 未压缩的矩阵
+    std::vector<std::vector<Scalar>> unCompressedMatrix_;   // 未压缩的矩阵
     std::vector<Tp> b_;             // 右侧向量 Ax = b
     Mesh* mesh_{ nullptr };
     bool isValid_{ false };         // 是否有效
@@ -86,17 +86,17 @@ private:
 
 
 template<typename Tp>
-inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix)
+inline SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Scalar>>& matrix)
     : size_(matrix.size())
     , unCompressedMatrix_(matrix)
     , b_(matrix.size())
 {
     // 检查是否为方阵，非方阵抛出异常
-    for (const std::vector<Tp>& row : matrix)
+    for (const std::vector<Scalar>& row : matrix)
     {
         if (row.size() != size_)
         {
-            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not square" << std::endl;
+            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Scalar>>& matrix) Error: matrix is not square" << std::endl;
             throw std::invalid_argument("matrix is not square");
         }
     }
@@ -113,7 +113,7 @@ inline SparseMatrix<Tp>::SparseMatrix(Mesh* mesh)
 template<typename Tp>
 inline SparseMatrix<Tp>::SparseMatrix(ULL size)
     : size_(size)
-    , unCompressedMatrix_(size, std::vector<Tp>(size))
+    , unCompressedMatrix_(size, std::vector<Scalar>(size))
     , isValid_(true)
 {}
 
@@ -177,7 +177,7 @@ inline void SparseMatrix<Tp>::compress()
     {
         for (ULL j = 0; j < size_; ++j)
         {
-            const Tp ele = unCompressedMatrix_[i][j];
+            const Scalar ele = unCompressedMatrix_[i][j];
             if (std::abs(ele) > EPSILON)   // 非0元素
             {
                 values_.emplace_back(ele);
@@ -288,17 +288,17 @@ inline void SparseMatrix<Tp>::init(Mesh* mesh)
 }
 
 template<typename Tp>
-inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix)
+inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Scalar>>& matrix)
 {
     size_ = matrix.size();
     unCompressedMatrix_ = matrix;
 
     // 检查是否为方阵，非方阵抛出异常
-    for (const std::vector<Tp>& row : matrix)
+    for (const std::vector<Scalar>& row : matrix)
     {
         if (row.size() != size_)
         {
-            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Tp>>& matrix) Error: matrix is not square" << std::endl;
+            std::cerr << "SparseMatrix<Tp>::SparseMatrix(const std::vector<std::vector<Scalar>>& matrix) Error: matrix is not square" << std::endl;
             throw std::invalid_argument("matrix is not square");
         }
     }
@@ -328,9 +328,9 @@ inline void SparseMatrix<Tp>::printMatrix() const
     std::cout << std::fixed << std::setprecision(PRECISION);    // 设置保留小数位数
     if (!isCompressed_) // 如果未压缩直接通过二维数组进行打印
     {
-        for (const std::vector<Tp>& row : unCompressedMatrix_)
+        for (const std::vector<Scalar>& row : unCompressedMatrix_)
         {
-            for (Tp ele : row)
+            for (Scalar ele : row)
             {
                 std::cout << std::setw(WIDTH) << ele;
             }
@@ -387,13 +387,13 @@ inline void SparseMatrix<Tp>::printMatrix() const
 }
 
 template<typename Tp>
-inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Tp value)
+inline void SparseMatrix<Tp>::setValue(ULL i, ULL j, Scalar value)
 {
     (*this)(i, j) = value;
 }
 
 template<typename Tp>
-inline void SparseMatrix<Tp>::addValue(ULL i, ULL j, Tp value)
+inline void SparseMatrix<Tp>::addValue(ULL i, ULL j, Scalar value)
 {
     (*this)(i, j) += value;
 }
@@ -528,7 +528,7 @@ inline Mesh* SparseMatrix<Tp>::getMesh() const
 
 
 template<typename Tp>
-inline Tp SparseMatrix<Tp>::at(ULL i, ULL j) const
+inline Scalar SparseMatrix<Tp>::at(ULL i, ULL j) const
 {
     if (!isValid_)
     {
@@ -570,7 +570,7 @@ inline Tp SparseMatrix<Tp>::at(ULL i, ULL j) const
 }
 
 template<typename Tp>
-inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
+inline Scalar& SparseMatrix<Tp>::operator()(ULL i, ULL j)
 {
     // 判断矩阵是否有效
     if (!isValid_)
@@ -615,7 +615,7 @@ inline Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j)
 }
 
 template<typename Tp>
-inline const Tp& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
+inline const Scalar& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
 {
     if (!isValid_)
     {
