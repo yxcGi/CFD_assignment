@@ -53,6 +53,8 @@ public:
 
     // 获取网格
     Mesh* getMesh() const;
+    // 获取size
+    ULL size() const;
 
     // 查看特定位置元素，只读
     Scalar at(ULL i, ULL j) const;
@@ -63,6 +65,8 @@ public:
     const Scalar& operator()(ULL i, ULL j) const;
 
 
+    // 是否压缩
+    bool isCompressed() const;
     // 是否有效
     bool isValid() const;
 
@@ -161,10 +165,9 @@ inline void SparseMatrix<Tp>::compress()
         throw std::invalid_argument("matrix is not valid");
     }
 
-    if (isCompressed_)  // 矩阵已压缩则不能压缩
+    if (isCompressed_)  // 矩阵已压缩则不能压缩，直接返回
     {
-        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Tp>>& matrix) Error: matrix is already compressed" << std::endl;
-        throw std::invalid_argument("matrix is already compressed");
+        return;
     }
 
 
@@ -290,6 +293,12 @@ inline void SparseMatrix<Tp>::init(Mesh* mesh)
 template<typename Tp>
 inline void SparseMatrix<Tp>::init(const std::vector<std::vector<Scalar>>& matrix)
 {
+    if (isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::init(const std::vector<std::vector<Scalar>>& matrix) Error: matrix is already initialized" << std::endl;
+        throw std::runtime_error("matrix is already initialized");
+    }
+
     size_ = matrix.size();
     unCompressedMatrix_ = matrix;
 
@@ -431,7 +440,7 @@ inline void SparseMatrix<Tp>::setB(ULL index, Tp value)
         b_[index] = value;
         return;
     }
-    
+
     std::cerr << "SparseMatrix<Tp>::setB(ULL index, Tp value) Error: index out of range" << std::endl;
     throw std::out_of_range("index out of range");
 }
@@ -524,6 +533,17 @@ inline Mesh* SparseMatrix<Tp>::getMesh() const
         throw std::invalid_argument("matrix is not valid");
     }
     return mesh_;
+}
+
+template<typename Tp>
+inline typename SparseMatrix<Tp>::ULL SparseMatrix<Tp>::size() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::size() Error: matrix is not valid" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+    return size_;
 }
 
 
@@ -655,6 +675,17 @@ inline const Scalar& SparseMatrix<Tp>::operator()(ULL i, ULL j) const
         std::cerr << "SparseMatrix<Tp>::operator()(ULL i, ULL j) Error: column " << j << " is not exist" << std::endl;
         throw std::invalid_argument("column " + std::to_string(j) + " is not exist");
     }
+}
+
+template<typename Tp>
+inline bool SparseMatrix<Tp>::isCompressed() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::isCompressed() Error: matrix is not valid" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+    return isCompressed_;
 }
 
 template<typename Tp>

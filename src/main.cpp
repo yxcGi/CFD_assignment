@@ -6,6 +6,7 @@
 #include <Field.hpp>
 #include "SparseMatrix.hpp"
 #include <cmath>
+#include "Solver.hpp"
 
 
 using Scalar = double;
@@ -103,9 +104,9 @@ int main()
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
 
-        phi.writeToFile("phi.dat");
+        // phi.writeToFile("phi.dat");
         
-        Field<Vector<Scalar>> gradPhi(grad(phi));
+        // Field<Vector<Scalar>> gradPhi(grad(phi));
         // gradPhi.writeToFile("phi.dat");
 
         SparseMatrix<Scalar> A_b(&mesh);
@@ -113,6 +114,13 @@ int main()
         gamma.setValue(10);
 
         fvm::Laplician(A_b, gamma, phi);
+
+        Solver<Scalar> solver(A_b, Solver<Scalar>::Method::GaussSeidel, 100);
+
+        std::vector<Scalar> b(phi.getCellField_0().getDataNumer(), 0.0);
+        
+        solver.init(b);
+
 
         // getchar();
     }
