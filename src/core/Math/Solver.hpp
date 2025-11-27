@@ -4,6 +4,7 @@
 #include "SparseMatrix.hpp"
 
 
+template <typename Tp>
 class Solver
 {
 public:
@@ -17,7 +18,7 @@ public:
 
 public:
     Solver() = delete;
-    explicit Solver(const SparseMatrix<Scalar>& matrix);
+    explicit Solver(const SparseMatrix<Tp>& matrix);
     Solver(const Solver&) = delete;
     Solver(Solver&&) = delete;
     ~Solver() = default;
