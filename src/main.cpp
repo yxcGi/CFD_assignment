@@ -91,12 +91,12 @@ int main()
 
         phi.setValue(
             [](Scalar x, Scalar y, Scalar z) {
-                return 200 * (x * x + y * y);
+                return 400 * std::sqrt(((x - 0.05) * (x - 0.05) / 4 + (y - 0.05) * (y - 0.05)));
             }
         );
 
         phi.setBoundaryCondition("fixedWalls", 0, 1, 0);
-        phi.setBoundaryCondition("movingWall", 1, 0, 200);
+        phi.setBoundaryCondition("movingWall", 0, 1, 0);
         // phi.setBoundaryCondition("upperWall", 0, 1, 0);
         // phi.setBoundaryCondition("lowerWall", 0, 1, 0);
         // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件

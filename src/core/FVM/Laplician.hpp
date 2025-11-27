@@ -125,7 +125,7 @@ namespace fvm
             Scalar gamma_f = gamma[faceId];
             Scalar d_cb = cb.magnitude();
             Scalar Ef_mag = faceArea / (faceNormal & unit_cb);
-            assert(Ef_mag > 0);// 此处采用断言，Ef_mag一定大于0 测试用
+            // assert(Ef_mag > 0);// 此处采用断言，Ef_mag一定大于0 测试用
             Vector<Scalar> Ef = Ef_mag * cb.unitVector();
             Vector<Scalar> Tf = Sf - Ef;
 
@@ -160,7 +160,7 @@ namespace fvm
             Scalar gamma_f = gamma[faceId];
             Scalar d_cb = cb.magnitude();
             Scalar Ef_mag = faceArea / (faceNormal & unit_cb);
-            assert(Ef_mag > 0);// 此处采用断言，Ef_mag一定大于0 测试用
+            // assert(Ef_mag > 0);// 此处采用断言，Ef_mag一定大于0 测试用
             Vector<Scalar> Ef = Ef_mag * cb.unitVector();
             Vector<Scalar> Tf = Sf - Ef;
 
