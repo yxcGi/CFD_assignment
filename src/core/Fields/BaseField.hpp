@@ -58,7 +58,8 @@ public:
     // 访问
     Tp& operator[](ULL i);
     const Tp& operator[](ULL i) const;
-protected:
+    const std::vector<Tp>& getData() const;
+    std::vector<Tp>& getData();
     ULL getDataNumer() const;   // 直接获取当前特定场的数据数量
 
 
@@ -272,6 +273,28 @@ inline const Tp& BaseField<Tp>::operator[](ULL i) const
     }
     std::cerr << "const Tp& BaseField<Tp>::operator[](ULL i) const Error: Field is not valid!" << std::endl;
     throw std::runtime_error("Field is not valid!");
+}
+
+template<typename Tp>
+inline std::vector<Tp>& BaseField<Tp>::getData()
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Field is not valid!" << std::endl;
+        throw std::runtime_error("Field is not valid!");
+    }
+    return data_;
+}
+
+template<typename Tp>
+inline const std::vector<Tp>& BaseField<Tp>::getData() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Error: Field is not valid!" << std::endl;
+        throw std::runtime_error("Field is not valid!");
+    }
+    return data_;
 }
 
 template<typename Tp>
