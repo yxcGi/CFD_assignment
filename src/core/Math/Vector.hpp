@@ -125,7 +125,7 @@ private:
 
 #pragma region 函数实现
 template<typename Tp>
-inline Vector<Tp>::Vector() : x_(0.0), y_(0.0), z_(0.0)
+inline Vector<Tp>::Vector() : x_(Tp{}), y_(Tp{}), z_(Tp{})
 {}
 
 template<typename Tp>

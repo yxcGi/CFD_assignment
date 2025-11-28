@@ -65,12 +65,17 @@ public:
     // 获取器
     const FaceField<Tp>& getFaceField() const;
     FaceField<Tp>& getFaceField();
+
     const CellField<Tp>& getCellField() const;
     CellField<Tp>& getCellField();
+
     const CellField<Tp>& getCellField_0() const;
     CellField<Tp>& getCellField_0();
+
     const CellField<decltype(Tp()* Vector<Scalar>())>& getCellGradientField() const;
     CellField<decltype(Tp()* Vector<Scalar>())>& getCellGradientField();
+
+
 
     std::string getName() const;
     Mesh* getMesh() const;
@@ -171,9 +176,10 @@ inline void Field<Tp>::initialize()
 template<typename Tp>
 inline const FaceField<Tp>& Field<Tp>::getFaceField() const
 {
-    if (isValid())
+    if (!isValid())
     {
-        return faceField_;
+        std::cerr << "const FaceField<Tp>& Field<Tp>::getFaceField() const Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return faceField_;
 }
@@ -181,9 +187,10 @@ inline const FaceField<Tp>& Field<Tp>::getFaceField() const
 template<typename Tp>
 inline FaceField<Tp>& Field<Tp>::getFaceField()
 {
-    if (isValid())
+    if (!isValid())
     {
-        return faceField_;
+        std::cerr << "FaceField<Tp>& Field<Tp>::getFaceField() Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return faceField_;
 }
@@ -191,9 +198,10 @@ inline FaceField<Tp>& Field<Tp>::getFaceField()
 template<typename Tp>
 inline const CellField<Tp>& Field<Tp>::getCellField() const
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellField_;
+        std::cerr << "const CellField<Tp>& Field<Tp>::getCellField() const Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return cellField_;
 }
@@ -201,9 +209,10 @@ inline const CellField<Tp>& Field<Tp>::getCellField() const
 template<typename Tp>
 inline CellField<Tp>& Field<Tp>::getCellField()
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellField_;
+        std::cerr << "CellField<Tp>& Field<Tp>::getCellField() Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return cellField_;
 }
@@ -211,9 +220,10 @@ inline CellField<Tp>& Field<Tp>::getCellField()
 template<typename Tp>
 inline const CellField<Tp>& Field<Tp>::getCellField_0() const
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellField_0_;
+        std::cerr << "const CellField<Tp>& Field<Tp>::getCellField_0() const Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return cellField_0_;
 }
@@ -221,9 +231,10 @@ inline const CellField<Tp>& Field<Tp>::getCellField_0() const
 template<typename Tp>
 inline CellField<Tp>& Field<Tp>::getCellField_0()
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellField_0_;
+        std::cerr << "CellField<Tp>& Field<Tp>::getCellField_0() Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
     return cellField_0_;
 }
@@ -231,22 +242,40 @@ inline CellField<Tp>& Field<Tp>::getCellField_0()
 template<typename Tp>
 inline const CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() const
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellGradientField_;
+        std::cerr << "const CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() const Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
+
+    if (!cellGradientField_.isValid())
+    {
+        std::cerr << "const CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() const Error: Cell gradient field is not valid" << std::endl;
+        throw std::runtime_error("Cell gradient field is not valid");
+    }
+
     return cellGradientField_;
 }
 
 template<typename Tp>
 inline CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField()
 {
-    if (isValid())
+    if (!isValid())
     {
-        return cellGradientField_;
+        std::cerr << "CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() Error: Field is not valid" << std::endl;
+        throw std::runtime_error("Field is not valid");
     }
+
+    if (!cellGradientField_.isValid())
+    {
+        std::cerr << "CellField<decltype(Tp()* Vector<Scalar>())>& Field<Tp>::getCellGradientField() Error: Cell gradient field is not valid" << std::endl;
+        throw std::runtime_error("Cell gradient field is not valid");
+    }
+
     return cellGradientField_;
 }
+
+
 
 template<typename Tp>
 inline std::string Field<Tp>::getName() const
@@ -325,7 +354,7 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 
         // 计算面到两个面的距离
         Scalar ownerDistance = (faceCenter - ownerCenter) & faceNormal;
-        Scalar neighborDistance = (faceCenter - neighborCenter) & faceNormal;
+        Scalar neighborDistance = (neighborCenter - faceCenter) & faceNormal;
 
         // 计算插值权重
         Scalar alpha = ownerDistance / (ownerDistance + neighborDistance);
@@ -478,6 +507,8 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
         }
     }
 }
+
+
 
 template<typename Tp>
 inline void Field<Tp>::writeToFile(const std::string& fileName, WriteFileType fileType) const

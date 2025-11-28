@@ -48,7 +48,7 @@ int main()
     try
     {
         using Scalar = double;
-        std::vector<std::vector<Scalar>> A{
+        std::vector<std::vector<Scalar>> B{
             { 0, 0, 0, 0, 0 },
             { 0, 1, 0, 0, 0 },
             { 0, 0, 0, 0, 0 },
@@ -56,23 +56,30 @@ int main()
             { 0, 0, 0, 4, 0 }
         };
 
-        std::vector<std::vector<Scalar>> B{
-            { 0, 0 },
-            { 1, 0 }
+        std::vector<std::vector<Scalar>> A{
+            { 1, 1 },
+            { 1, 2 }
         };
+        std::vector<Scalar> b{ 3, 5 };
 
-        SparseMatrix<Scalar> B_sparse(B);
+
+        SparseMatrix<Scalar> B_sparse(A);
+        B_sparse.setB(b);
         B_sparse.printMatrix();
         B_sparse.compress();
 
+        Solver<Scalar> solver(B_sparse, Solver<Scalar>::Method::Jacobi, 100);
+        solver.init(b);
+        solver.solve();
+
         // B_sparse.setValue(0, 0, 99);
         // B_sparse.setValue(0, 1, 99);
-        B_sparse.setValue(1, 0, 99);
+        // B_sparse.setValue(1, 0, 99);
         // B_sparse.setValue(1, 1, 99);
-        
+
         B_sparse.printMatrix();
 
-        
+
     }
     catch (std::exception& e)
     {
@@ -90,36 +97,25 @@ int main()
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
-        phi.setValue(
-            [](Scalar x, Scalar y, Scalar z) {
-                return 400 * std::sqrt(((x - 0.05) * (x - 0.05) / 4 + (y - 0.05) * (y - 0.05)));
-            }
-        );
+        phi.setValue(50);
 
-        phi.setBoundaryCondition("fixedWalls", 0, 1, 0);
+        phi.setBoundaryCondition("fixedWalls", 1, 0, 100);
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
-        // phi.setBoundaryCondition("upperWall", 0, 1, 0);
-        // phi.setBoundaryCondition("lowerWall", 0, 1, 0);
-        // phi.setBoundaryCondition("frontAndBack", 0, 1, 100);     // empty边界不需要设置边界条件
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
-
-        // phi.writeToFile("phi.dat");
-        
-        // Field<Vector<Scalar>> gradPhi(grad(phi));
-        // gradPhi.writeToFile("phi.dat");
-
+        // 稀疏矩阵
         SparseMatrix<Scalar> A_b(&mesh);
         FaceField<Scalar> gamma("gamma", &mesh);
         gamma.setValue(10);
 
         fvm::Laplician(A_b, gamma, phi);
 
-        Solver<Scalar> solver(A_b, Solver<Scalar>::Method::GaussSeidel, 100);
+        Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
-        std::vector<Scalar> b(phi.getCellField_0().getDataNumer(), 0.0);
-        
-        solver.init(b);
+        solver.init(phi.getCellField_0().getData());
+        solver.solve();
+
+        phi.writeToFile("phi.dat");
 
 
         // getchar();

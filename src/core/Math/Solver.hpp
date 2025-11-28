@@ -11,6 +11,7 @@ class Solver
 {
     using ULL = unsigned long long;
     static constexpr double DEFAULT_EPSILON = 1e-6;
+    static constexpr int DEFAULT_OUTPUT_INTERVAL = 20;
 public:
     // 求解方法
     enum class Method
@@ -41,7 +42,8 @@ public:
 
 private:
     // 私有求解辅助函数
-    void solve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine);
+    bool ParallelSolve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine);
+    void SerialSolve();
 
 
 private:
@@ -51,7 +53,11 @@ private:
     Scalar relaxationFactor_{ 1.0 };// 松弛因子
     Method method_;             // 求解方法
     int maxIterationNum_;       // 最大迭代次数
-    Scalar residual_;           // 残差
+    Scalar tolerance_;           // 残差
+    Field<Tp>* filed_{ nullptr };           // 待求解的场
+    // 每多少步输出一次
+    int outputInterval_;
+    bool isParallel_{ false };  // 是否并行
     bool isInitialized_{ false };// 是否赋初始值
 };
 
@@ -65,7 +71,8 @@ inline Solver<Tp>::Solver(SparseMatrix<Tp>& matrix, Method method, int maxmaxIte
     : equation_(matrix)
     , method_(method)
     , maxIterationNum_(maxmaxIterationNum)
-    , residual_(DEFAULT_EPSILON)
+    , tolerance_(DEFAULT_EPSILON)
+    , outputInterval_(DEFAULT_OUTPUT_INTERVAL)
 {
     // 检查矩阵是否有效
     if (!equation_.isValid())
@@ -99,6 +106,11 @@ inline void Solver<Tp>::init(const std::vector<Tp>& x0)
     }
     // 赋初值
     x0_ = x0;
+    x_.resize(equation_.size());
+
+    // 获取场，如果没有就是空指针
+    filed_ = &equation_.getField();
+
     isInitialized_ = true;
 }
 
@@ -113,6 +125,7 @@ inline void Solver<Tp>::init(Tp value0)
     }
 
     x0_.resize(equation_.size(), value0);
+    x_.resize(equation_.size());
     isInitialized_ = true;
 }
 
@@ -153,6 +166,7 @@ inline void Solver<Tp>::init(const Field<Tp>& initField)
 
     // 从field中的cellField_0_获取初始值
     x0_ = initField.getCellField_0().getData();
+    x_.resize(equation_.size());
     isInitialized_ = true;
 }
 
@@ -165,9 +179,43 @@ inline void Solver<Tp>::solve()
         throw std::runtime_error("cannot solve without initialization");
     }
 
-    // 根据电脑cpu核数，创建线程池个数为 cpu核数-1
-    ThreadPool* pool = &ThreadPool::getInstance();
-    pool->start(std::thread::hardware_concurrency() - 1);
+    if (isParallel_)    // 并行挖坑
+    {
+        // // 根据电脑cpu核数，创建线程池个数为 cpu核数-1
+        // ThreadPool* pool = &ThreadPool::getInstance();
+        // int threadNum = std::thread::hardware_concurrency() - 1;
+        // pool->start(threadNum);
+
+        // // 给每个线程分配计算行的范围
+        // ULL baseLineNum = equation_.size() / threadNum;
+        // ULL remainLineNum = equation_.size() % threadNum;
+
+        // for (int i = 0; i < threadNum; ++i)
+        // {
+        //     if (i < remainLineNum)
+        //     {
+        //         pool->submitTask(
+        //             &(this->solve()),
+        //             (baseLineNum + 1) * i,
+        //             (baseLineNum + 1) * (i + 1)
+        //         );
+        //     }
+        //     else
+        //     {
+        //         pool->submitTask(
+        //             &(this->solve()),
+        //             baseLineNum * i + remainLineNum,
+        //             baseLineNum * (i + 1) + remainLineNum
+        //         );
+        //     }
+        // }
+    }
+    else
+    {
+        SerialSolve();
+    }
+
+
 }
 
 template<typename Tp>
@@ -177,12 +225,117 @@ inline bool Solver<Tp>::isValid() const
 }
 
 template<typename Tp>
-inline void Solver<Tp>::solve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine)
+inline bool Solver<Tp>::ParallelSolve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine)
 {
+
+}
+
+template<typename Tp>
+inline void Solver<Tp>::SerialSolve()
+{
+    // 获取必要参数
+    ULL size = equation_.size();    // size
+    const std::vector<ULL>& rowPointer = equation_.getRowPointer(); // 稀疏矩阵行首索引
+    const std::vector<ULL>& columnIndex = equation_.getColIndexs(); // 与values对应的列索引
+    const std::vector<Scalar> values = equation_.getValues();   // 稀疏非0元素
+    const std::vector<Tp>& b = equation_.getB();
+
+
+    // 获取矩阵对角元素
+    std::vector<Scalar> diag(size);
+    for (ULL i = 0; i < size; ++i)
+    {
+        diag[i] = equation_(i, i);
+    }
+
+
+    // 先确认不存在0元素行
+    for (ULL i = 0; i < size; ++i)
+    {
+        if (rowPointer[i] == rowPointer[i + 1])
+        {
+            std::cerr << "Solver<Tp>::SerialSolve() Error: The line " << i << " of the matrix is a zero element row" << std::endl;
+            throw std::runtime_error("matrix has a zero element row");
+        }
+    }
+
     if (method_ == Solver::Method::Jacobi)
     {
-        for (int i = 0; i < maxIterationNum_; ++i)
+        for (int it = 0; it < maxIterationNum_; ++it)
         {
+            for (ULL i = 0; i < size; ++i)
+            {
+                Tp sum{};
+
+                // 只遍历当前行的非0元素
+                for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+                {
+                    sum += values[colId] * x0_[columnIndex[colId]];
+                }
+                sum -= x0_[i] * diag[i];
+                // 计算当前步解
+                x_[i] = (b[i] - sum) / diag[i];
+            }
+
+            // 计算残差，采用最大残差
+            Scalar maxResidual = 0;
+            if constexpr (std::is_same_v<Tp, Scalar>)
+            {
+                for (ULL i = 0; i < size; ++i)
+                {
+                    Scalar residual{};
+                    for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+                    {
+                        residual += values[colId] * x_[columnIndex[colId]];
+                    }
+                    residual = std::abs(b[i] - residual);
+                    maxResidual = std::max(maxResidual, residual);
+                }
+            }
+            if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+            {
+                for (ULL i = 0; i < size; ++i)
+                {
+                    Vector<Scalar> residual{};
+                    for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+                    {
+                        residual += values[colId] * x_[columnIndex[colId]];
+                    }
+                    maxResidual = std::max(maxResidual, residual.magnitude());
+                }
+            }
+
+    
+
+            // 每N步输出一次
+            if (it % outputInterval_ == 0)
+            {
+                if (filed_)
+                {
+                    filed_->getCellField().getData() = x_;
+                    filed_->getCellField_0().getData() = x0_;
+                }
+                std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << std::endl;
+                // 更新x0_
+                x0_ = x_;
+            }
+
+            
+
+            // 测试用
+            // for (int i = 0; i < equation_.size(); ++i)
+            // {
+                
+            //     std::cout << x_[i] << " ";
+            // }
+            // std::cout << std::endl;
+
+            // 残差满足要求则返回
+            if (maxResidual < tolerance_)
+            {
+                std::cout << "The solution has converged" << std::endl;
+                return;
+            }
 
         }
     }

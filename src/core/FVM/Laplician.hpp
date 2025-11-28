@@ -13,7 +13,7 @@ namespace fvm
     void Laplician(
         SparseMatrix<Tp>& matrix,   // 稀疏矩阵
         const FaceField<Tp>& gamma,        // 扩散系数
-        const Field<Tp>& phi              // 场值
+        Field<Tp>& phi              // 场值
     );
 
 
@@ -22,7 +22,7 @@ namespace fvm
     void Laplician(
         SparseMatrix<Tp>& matrix,
         const FaceField<Tp>& gamma,
-        const Field<Tp>& phi
+        Field<Tp>& phi
     )
     {
         using GradType = decltype(Tp()* Vector<Scalar>());
@@ -65,6 +65,20 @@ namespace fvm
             throw std::invalid_argument("The mesh of the input fields parameters is not the same as the mesh of the matrix.");
         }
 
+        // 给矩阵设置场，或者检查矩阵中的场是否与离散项一致
+        if (matrix.fieldPtr_ == nullptr)
+        {
+            matrix.fieldPtr_ = &phi;
+        }
+        else
+        {
+            if (matrix.fieldPtr_ != &phi)
+            {
+                std::cerr << "Laplician() Error: The field of the input matrix is not the same as the field of the input fields parameters." << std::endl;
+                throw std::invalid_argument("The field of the input matrix is not the same as the field of the input fields parameters.");
+            }
+        }
+
         using ULL = unsigned long long;
         using LL = long long;
         const std::vector<Face> faces = mesh->getFaces();
@@ -90,8 +104,8 @@ namespace fvm
             const GradType& ownerGrad = cellGradientField[owner];
             const GradType& neighborGrad = cellGradientField[neighbor];
             // 获取主单元与邻单元与面的距离
-            Scalar ownerDistance = std::abs((faceCenter - cells[owner].getCenter()) & faceNormal);
-            Scalar neighborDistance = std::abs((faceCenter - cells[neighbor].getCenter()) & faceNormal);
+            Scalar ownerDistance = (faceCenter - cells[owner].getCenter()) & faceNormal;
+            Scalar neighborDistance = (cells[neighbor].getCenter() - faceCenter) & faceNormal;
             Scalar alpha = ownerDistance / (ownerDistance + neighborDistance);
 
             // 插值
@@ -135,8 +149,8 @@ namespace fvm
             // 添加矩阵元素
             matrix(owner, owner) += coefficient_E;
             matrix(owner, neighbor) -= coefficient_E;
-            matrix(neighbor, neighbor) -= coefficient_E;
-            matrix(neighbor, owner) += coefficient_E;
+            matrix(neighbor, neighbor) += coefficient_E;
+            matrix(neighbor, owner) -= coefficient_E;
 
 
             // 考虑非正交修正，采用延迟修正
@@ -169,7 +183,7 @@ namespace fvm
 
             // 添加矩阵元素
             matrix(owner, owner) += coefficient_E;
-            matrix.addB(owner, coefficient_E + coefficient_T);
+            matrix.addB(owner, coefficient_E * facefield[faceId] + coefficient_T);
         }
     }
 }

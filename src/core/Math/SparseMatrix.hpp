@@ -6,6 +6,20 @@
 #include <vector>
 #include "Mesh.h"
 #include <queue>
+#include "Field.hpp"
+
+
+template <typename Tp>
+class SparseMatrix;
+
+// 前置友元函数声明
+namespace fvm
+{
+    template<typename Tp>
+    void Laplician(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
+}
+
+
 
 /**
  * @brief 采用CSR方法存储稀疏矩阵，仅为方阵
@@ -14,6 +28,7 @@
 template <typename Tp>
 class SparseMatrix
 {
+
     using ULL = unsigned long long;
     using LL = long long;
     constexpr static double EPSILON = 1e-10;
@@ -50,11 +65,19 @@ public:
     const std::vector<Tp>& getB() const;
     Tp& getB(ULL index);
     Tp getB(ULL index) const;
+    // 设置场
+    // void setField(const Field<Tp>& field);
+    Field<Tp>& getField();
 
     // 获取网格
     Mesh* getMesh() const;
     // 获取size
     ULL size() const;
+
+    // 获取矩阵元素，行首索引，列索引
+    const std::vector<Scalar>& getValues() const;
+    const std::vector<ULL>& getColIndexs() const;
+    const std::vector<ULL>& getRowPointer() const;
 
     // 查看特定位置元素，只读
     Scalar at(ULL i, ULL j) const;
@@ -70,6 +93,8 @@ public:
     // 是否有效
     bool isValid() const;
 
+    friend void fvm::Laplician(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
+
 private:
 
 
@@ -80,7 +105,8 @@ private:
     ULL size_;                      // 矩阵大小
     std::vector<std::vector<Scalar>> unCompressedMatrix_;   // 未压缩的矩阵
     std::vector<Tp> b_;             // 右侧向量 Ax = b
-    Mesh* mesh_{ nullptr };
+    Field<Tp>* fieldPtr_{ nullptr };   // 存储phi，调用离散项函数的时候用到
+    Mesh* mesh_{ nullptr };         // 网格
     bool isValid_{ false };         // 是否有效
     bool isCompressed_{ false };    // 是否压缩
 };
@@ -323,7 +349,7 @@ inline void SparseMatrix<Tp>::printMatrix() const
         throw std::invalid_argument("matrix is not valid");
     }
 
-    if (size_ > 30) // 矩阵过大则不支持输出
+    if (size_ > 1000) // 矩阵过大则不支持输出
     {
         std::cerr << "SparseMatrix<Tp>::printMatrix() Error: matrix is too large" << std::endl;
         return;
@@ -524,6 +550,19 @@ inline Tp SparseMatrix<Tp>::getB(ULL index) const
     throw std::out_of_range("index out of range");
 }
 
+
+
+template<typename Tp>
+inline Field<Tp>& SparseMatrix<Tp>::getField()
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getField() Error: matrix is not valid" << std::endl;
+        throw std::invalid_argument("matrix is not valid");
+    }
+    return *fieldPtr_;
+}
+
 template<typename Tp>
 inline Mesh* SparseMatrix<Tp>::getMesh() const
 {
@@ -544,6 +583,55 @@ inline typename SparseMatrix<Tp>::ULL SparseMatrix<Tp>::size() const
         throw std::runtime_error("matrix is not valid");
     }
     return size_;
+}
+
+template<typename Tp>
+inline const std::vector<Scalar>& SparseMatrix<Tp>::getValues() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getValues() Error: matrix is not valid, can not get values" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+
+    if (!isCompressed_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getValues() Error: matrix is not compressed, can not get values" << std::endl;
+        throw std::runtime_error("matrix is not compressed");
+    }
+    return values_;
+}
+
+template<typename Tp>
+inline const std::vector<typename SparseMatrix<Tp>::ULL>& SparseMatrix<Tp>::getColIndexs() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getColIndexs() Error: matrix is not valid, can not get col indexs" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+    if (!isCompressed_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getColIndexs() Error: matrix is not compressed, can not get col indexs" << std::endl;
+        throw std::runtime_error("matrix is not compressed");
+    }
+    return colIndexs_;
+}
+
+template<typename Tp>
+inline const std::vector<typename SparseMatrix<Tp>::ULL>& SparseMatrix<Tp>::getRowPointer() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getRowPointer() Error: matrix is not valid, can not get row pointer" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+    if (!isCompressed_)
+    {
+        std::cerr << "SparseMatrix<Tp>::getRowPointer() Error: matrix is not compressed, can not get row pointer" << std::endl;
+        throw std::runtime_error("matrix is not compressed");
+    }
+    return rowPointer_;
 }
 
 
