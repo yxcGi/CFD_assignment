@@ -14,6 +14,7 @@ file(GLOB_RECURSE CORE_HEADERS
     Fields/*.h
     Fields/*.hpp
     FVM/*.hpp
+    thread_pool/*.hpp
 )
 
 # 添加动态库
@@ -28,5 +29,6 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/Fields
     ${CMAKE_CURRENT_SOURCE_DIR}/Fields/FieldOperators
     ${CMAKE_CURRENT_SOURCE_DIR}/FVM
+    ${CMAKE_CURRENT_SOURCE_DIR}/thread_pool
     ${CORE_HEADERS}
 )
