@@ -3,11 +3,14 @@
 
 #include "SparseMatrix.hpp"
 #include "Field.hpp"
+#include "threadpool.hpp"
 
 
 template <typename Tp>
 class Solver
 {
+    using ULL = unsigned long long;
+    static constexpr double DEFAULT_EPSILON = 1e-6;
 public:
     // 求解方法
     enum class Method
@@ -31,16 +34,25 @@ public:
     void init(const Field<Tp>& initField);
 
     // 求解方程
+    void solve();
+
+    // 是否有效（初始化与否）
+    bool isValid() const;
+
+private:
+    // 私有求解辅助函数
+    void solve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine);
 
 
 private:
     SparseMatrix<Tp>& equation_;  // 方程矩阵（稀疏矩阵，压不压缩都行）
     std::vector<Tp> x0_;        // 上一步的解
     std::vector<Tp> x_;         // 本步的解
-    Scalar relaxationFactor_{ 1.0 };       // 松弛因子
+    Scalar relaxationFactor_{ 1.0 };// 松弛因子
     Method method_;             // 求解方法
     int maxIterationNum_;       // 最大迭代次数
-    bool isInitialized_{ false };           // 是否赋初始值
+    Scalar residual_;           // 残差
+    bool isInitialized_{ false };// 是否赋初始值
 };
 
 
@@ -53,6 +65,7 @@ inline Solver<Tp>::Solver(SparseMatrix<Tp>& matrix, Method method, int maxmaxIte
     : equation_(matrix)
     , method_(method)
     , maxIterationNum_(maxmaxIterationNum)
+    , residual_(DEFAULT_EPSILON)
 {
     // 检查矩阵是否有效
     if (!equation_.isValid())
@@ -141,6 +154,46 @@ inline void Solver<Tp>::init(const Field<Tp>& initField)
     // 从field中的cellField_0_获取初始值
     x0_ = initField.getCellField_0().getData();
     isInitialized_ = true;
+}
+
+template<typename Tp>
+inline void Solver<Tp>::solve()
+{
+    if (!isInitialized_)
+    {
+        std::cerr << "Solver<Tp>::solve() Error: cannot solve without initialization" << std::endl;
+        throw std::runtime_error("cannot solve without initialization");
+    }
+
+    // 根据电脑cpu核数，创建线程池个数为 cpu核数-1
+    ThreadPool* pool = &ThreadPool::getInstance();
+    pool->start(std::thread::hardware_concurrency() - 1);
+}
+
+template<typename Tp>
+inline bool Solver<Tp>::isValid() const
+{
+    return isInitialized_;
+}
+
+template<typename Tp>
+inline void Solver<Tp>::solve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine)
+{
+    if (method_ == Solver::Method::Jacobi)
+    {
+        for (int i = 0; i < maxIterationNum_; ++i)
+        {
+
+        }
+    }
+    else if (method_ == Solver::Method::GaussSeidel)
+    {
+
+    }
+    else if (method_ == Solver::Method::AMG)
+    {
+
+    }
 }
 
 
