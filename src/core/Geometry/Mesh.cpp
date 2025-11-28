@@ -29,7 +29,7 @@ void Mesh::readMesh(const std::string& path)
     std::string Mesh_points = path + "/points";
     std::string Mesh_faces = path + "/faces";
     std::string Mesh_boundary = path + "/boundary";
-    std::string Mesh_neighbour = path + "/neighbour";;
+    std::string Mesh_neighbour = path + "/neighbour";
     std::string Mesh_owner = path + "/owner";
 
     readPoints(Mesh_points);
@@ -835,7 +835,7 @@ void Mesh::buildCellsFromFaces()
             }
             else                        // 内部面
             {
-                boundaryFaceIndexes_.emplace_back(i);
+                internalFaceIndexes_.emplace_back(i);
                 cells_[ownerIndex].addFaceIndex(i);
                 cells_[neighborIndex].addFaceIndex(i);
                 internalCellIndexes_.emplace(ownerIndex);
@@ -879,7 +879,7 @@ void Mesh::buildCellsFromFaces()
             }
             else                        // 内部面
             {
-                boundaryFaceIndexes_.emplace_back(i);
+                internalFaceIndexes_.emplace_back(i);
                 cells_[ownerIndex].addFaceIndex(i);
                 cells_[neighborIndex].addFaceIndex(i);
                 internalCellIndexes_.emplace(ownerIndex);

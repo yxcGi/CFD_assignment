@@ -88,9 +88,9 @@ private:
 
 template<typename Tp>
 inline Tensor<Tp>::Tensor()
-    : xx_(0), xy_(0), xz_(0)
-    , yx_(0), yy_(0), yz_(0)
-    , zx_(0), zy_(0), zz_(0)
+    : xx_(Tp{}), xy_(Tp{}), xz_(Tp{})
+    , yx_(Tp{}), yy_(Tp{}), yz_(Tp{})
+    , zx_(Tp{}), zy_(Tp{}), zz_(Tp{})
 {}
 
 template<typename Tp>
