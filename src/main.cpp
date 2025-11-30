@@ -92,15 +92,17 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
         phi.setValue(50);
 
-        phi.setBoundaryCondition("fixedWalls", 1, 0, 100);
-        phi.setBoundaryCondition("movingWall", 0, 1, 0);
+        phi.setBoundaryCondition("outlet", 1, 0, 0);
+        phi.setBoundaryCondition("upperWall", 1, 0, 100);
+        phi.setBoundaryCondition("inlet", 0, 1, 0);
+        phi.setBoundaryCondition("lowerWall", 0, 1, 0);
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
         // 稀疏矩阵
@@ -113,7 +115,13 @@ int main()
         Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
         solver.init(phi.getCellField_0().getData());
+        solver.setParallel();
+
+        // 计算求解时间
+        auto start = std::chrono::high_resolution_clock::now();
         solver.solve();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
         phi.writeToFile("phi.dat");
 

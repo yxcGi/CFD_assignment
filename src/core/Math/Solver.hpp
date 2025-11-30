@@ -34,6 +34,9 @@ public:
     void init(Tp value0);
     void init(const Field<Tp>& initField);
 
+    // 并行
+    void setParallel();
+
     // 求解方程
     void solve();
 
@@ -42,7 +45,7 @@ public:
 
 private:
     // 私有求解辅助函数
-    bool ParallelSolve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine);
+    void ParallelSolve();
     void SerialSolve();
 
 
@@ -171,6 +174,12 @@ inline void Solver<Tp>::init(const Field<Tp>& initField)
 }
 
 template<typename Tp>
+inline void Solver<Tp>::setParallel()
+{
+    isParallel_ = true;
+}
+
+template<typename Tp>
 inline void Solver<Tp>::solve()
 {
     if (!isInitialized_)
@@ -179,36 +188,9 @@ inline void Solver<Tp>::solve()
         throw std::runtime_error("cannot solve without initialization");
     }
 
-    if (isParallel_)    // 并行挖坑
+    if (isParallel_)
     {
-        // // 根据电脑cpu核数，创建线程池个数为 cpu核数-1
-        // ThreadPool* pool = &ThreadPool::getInstance();
-        // int threadNum = std::thread::hardware_concurrency() - 1;
-        // pool->start(threadNum);
-
-        // // 给每个线程分配计算行的范围
-        // ULL baseLineNum = equation_.size() / threadNum;
-        // ULL remainLineNum = equation_.size() % threadNum;
-
-        // for (int i = 0; i < threadNum; ++i)
-        // {
-        //     if (i < remainLineNum)
-        //     {
-        //         pool->submitTask(
-        //             &(this->solve()),
-        //             (baseLineNum + 1) * i,
-        //             (baseLineNum + 1) * (i + 1)
-        //         );
-        //     }
-        //     else
-        //     {
-        //         pool->submitTask(
-        //             &(this->solve()),
-        //             baseLineNum * i + remainLineNum,
-        //             baseLineNum * (i + 1) + remainLineNum
-        //         );
-        //     }
-        // }
+        ParallelSolve();
     }
     else
     {
@@ -225,10 +207,150 @@ inline bool Solver<Tp>::isValid() const
 }
 
 template<typename Tp>
-inline bool Solver<Tp>::ParallelSolve(Solver<Tp>::ULL startLine, Solver<Tp>::ULL endLine)
+inline void Solver<Tp>::ParallelSolve()
 {
+    // 根据电脑cpu核数，创建线程池个数为 cpu核数-1，主线程用于集中处理
+    ThreadPool* pool = &ThreadPool::getInstance();
+    int threadNum = std::thread::hardware_concurrency() - 1;
+    pool->start(threadNum);
 
+    // 给每个线程分配计算行的范围
+    ULL baseLineNum = equation_.size() / threadNum;
+    ULL remainLineNum = equation_.size() % threadNum;
+    std::vector<ULL> lineRange(threadNum + 1);  // 存储每个线程的行范围
+    for (int i = 0; i < threadNum; ++i)     // 给范围赋值
+    {
+        if (i < remainLineNum)
+        {
+            lineRange[i] = (baseLineNum + 1) * i;
+            lineRange[i + 1] = (baseLineNum + 1) * (i + 1);
+        }
+        else
+        {
+            lineRange[i] = baseLineNum * i + remainLineNum;
+            lineRange[i + 1] = baseLineNum * (i + 1) + remainLineNum;
+        }
+    }
+
+    ULL size = equation_.size();    // size
+    const std::vector<ULL>& rowPointer = equation_.getRowPointer();
+    const std::vector<Scalar>& values = equation_.getValues();
+    const std::vector<ULL>& columnIndex = equation_.getColIndexs();
+    const std::vector<Tp>& b = equation_.getB();
+    std::vector<Scalar> diag(size);
+    for (ULL i = 0; i < size; ++i)
+    {
+        diag[i] = equation_(i, i);
+    }
+
+    // 创建线程函数
+    std::function<void(ULL, ULL)> paraSolve = [&](ULL start, ULL end) {
+        for (ULL i = start; i < end; ++i)
+        {
+            Tp sum{};
+
+            // 只遍历当前行的非0元素
+            for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+            {
+                sum += values[colId] * x0_[columnIndex[colId]];
+            }
+            sum -= x0_[i] * diag[i];
+            // 计算当前步解
+            x_[i] = (b[i] - sum) / diag[i];
+        }
+        };
+
+    // std::function<Scalar(ULL, ULL)> paraSolveFunc = std::bind(
+    //     static_cast<Scalar(Solver<Tp>::*)(ULL, ULL)>(&Solver<Tp>::ParallelSolve),
+    //     this,
+    //     std::placeholders::_1,
+    //     std::placeholders::_2
+    // );
+
+    // 存储线程的返回值数组
+    std::vector<std::future<void>> results(threadNum);    // 记录每个线程返回的最大残差
+    for (int it = 0; it < maxIterationNum_; ++it)
+    {
+        for (int i = 0; i < threadNum; ++i) // 给每个线程分配任务
+        {
+            results[i] = pool->submitTask(
+                paraSolve,
+                lineRange[i],
+                lineRange[i + 1]
+            );
+        }
+        for (int i = 0; i < threadNum; ++i) // 等待线程完成
+        {
+            results[i].get();
+        }
+
+        x0_ = x_;   // 更新x0_
+
+        // 计算残差，采用最大残差
+        Scalar maxResidual = 0;
+        if constexpr (std::is_same_v<Tp, Scalar>)
+        {
+            for (ULL i = 0; i < size; ++i)
+            {
+                Scalar residual{};
+                for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+                {
+                    residual += values[colId] * x_[columnIndex[colId]];
+                }
+                residual = std::abs(b[i] - residual);
+                maxResidual = std::max(maxResidual, residual);
+            }
+
+        }
+        else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+        {
+            for (ULL i = 0; i < size; ++i)
+            {
+                Vector<Scalar> residual{};
+                for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+                {
+                    residual += values[colId] * x_[columnIndex[colId]];
+                }
+                residual = residual - b[i];
+                maxResidual = std::max(maxResidual, residual.magnitude());
+            }
+        }
+        else
+        {
+            std::cerr << "Solver<Tp>::SerialSolve() Error: The type of Tp is not supported" << std::endl;
+            throw std::runtime_error("The type of Tp is not supported");
+        }
+
+
+        // 每N步输出一次
+        if ((it + 1) % outputInterval_ == 0 ||  // 保证后续输出的是整数次
+            it % outputInterval_ == 0)  // 第0次用
+        {
+            if (filed_)
+            {
+                filed_->getCellField().getData() = x_;
+                filed_->getCellField_0().getData() = x0_;
+            }
+            std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << std::endl;
+        }
+
+
+        // 最大残差小于tolerance_，则结束迭代
+        if (maxResidual < tolerance_)
+        {
+            if (filed_)
+            {
+                filed_->getCellField().getData() = x_;
+                filed_->getCellField_0().getData() = x0_;
+            }
+            std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << "The solution has converged" << std::endl;
+
+            return;
+        }
+    }
 }
+
+
 
 template<typename Tp>
 inline void Solver<Tp>::SerialSolve()
@@ -241,14 +363,6 @@ inline void Solver<Tp>::SerialSolve()
     const std::vector<Tp>& b = equation_.getB();
 
 
-    // 获取矩阵对角元素
-    std::vector<Scalar> diag(size);
-    for (ULL i = 0; i < size; ++i)
-    {
-        diag[i] = equation_(i, i);
-    }
-
-
     // 先确认不存在0元素行
     for (ULL i = 0; i < size; ++i)
     {
@@ -257,6 +371,13 @@ inline void Solver<Tp>::SerialSolve()
             std::cerr << "Solver<Tp>::SerialSolve() Error: The line " << i << " of the matrix is a zero element row" << std::endl;
             throw std::runtime_error("matrix has a zero element row");
         }
+    }
+
+    // 获取矩阵对角元素
+    std::vector<Scalar> diag(size);
+    for (ULL i = 0; i < size; ++i)
+    {
+        diag[i] = equation_(i, i);
     }
 
     if (method_ == Solver::Method::Jacobi)
@@ -276,6 +397,7 @@ inline void Solver<Tp>::SerialSolve()
                 // 计算当前步解
                 x_[i] = (b[i] - sum) / diag[i];
             }
+            x0_ = x_;   // 更新x0_
 
             // 计算残差，采用最大残差
             Scalar maxResidual = 0;
@@ -292,7 +414,7 @@ inline void Solver<Tp>::SerialSolve()
                     maxResidual = std::max(maxResidual, residual);
                 }
             }
-            if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+            else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
             {
                 for (ULL i = 0; i < size; ++i)
                 {
@@ -301,14 +423,19 @@ inline void Solver<Tp>::SerialSolve()
                     {
                         residual += values[colId] * x_[columnIndex[colId]];
                     }
+                    residual = residual - b[i];
                     maxResidual = std::max(maxResidual, residual.magnitude());
                 }
             }
-
-    
+            else
+            {
+                std::cerr << "Solver<Tp>::SerialSolve() Error: The type of Tp is not supported" << std::endl;
+                throw std::runtime_error("The type of Tp is not supported");
+            }
 
             // 每N步输出一次
-            if (it % outputInterval_ == 0)
+            if ((it + 1) % outputInterval_ == 0 ||  // 保证后续输出的是整数次
+                it % outputInterval_ == 0)  // 第0次用
             {
                 if (filed_)
                 {
@@ -316,16 +443,14 @@ inline void Solver<Tp>::SerialSolve()
                     filed_->getCellField_0().getData() = x0_;
                 }
                 std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << std::endl;
-                // 更新x0_
-                x0_ = x_;
             }
 
-            
+
 
             // 测试用
             // for (int i = 0; i < equation_.size(); ++i)
             // {
-                
+
             //     std::cout << x_[i] << " ";
             // }
             // std::cout << std::endl;
@@ -333,7 +458,12 @@ inline void Solver<Tp>::SerialSolve()
             // 残差满足要求则返回
             if (maxResidual < tolerance_)
             {
-                std::cout << "The solution has converged" << std::endl;
+                if (filed_)
+                {
+                    filed_->getCellField().getData() = x_;
+                    filed_->getCellField_0().getData() = x0_;
+                }
+                std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << " The solution has converged" << std::endl;
                 return;
             }
 

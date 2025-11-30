@@ -195,6 +195,20 @@ const std::unordered_map<std::string, BoundaryPatch>& Mesh::getBoundaryPatches()
     return boundaryPatches_;
 }
 
+void Mesh::getBoundaryMessage
+() const
+{
+    if (!isValid_)
+    {
+        std::cerr << "Mesh::getBoundaryNames() Error: Mesh is invalid, cannot return boundary names.";
+        throw std::runtime_error("Invalid mesh boundary names error");
+    }
+    for (const auto& [name, patch] : boundaryPatches_)
+    {
+        std::cout << name << ", start face: " << patch.getStartFace() << ", n face: " << patch.getNFace() << std::endl;
+    }
+}
+
 ULL Mesh::getNumber(field::FieldType type) const
 {
     if (!isValid_)

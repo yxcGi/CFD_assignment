@@ -72,6 +72,7 @@ public:
 
     const std::unordered_map<std::string, BoundaryPatch>&
         getBoundaryPatches() const;
+    void getBoundaryMessage() const;    // 获取边界信息
 
     // 用于获取不同类型场的数量的统一接口
     ULL getNumber(field::FieldType type) const;
@@ -92,7 +93,7 @@ private:
         const std::string& neighbourPath
     );
     void readNeighbour(const std::string& neighbourPath, std::vector<ULL> internalFaceIndices);
-    
+
     void writePoints(const std::string& pointsPath) const;
     void writeFaces(const std::string& facesPath) const;
     void writeOwnerAndNeighbour(const std::string& ownerPath, const std::string& neighbourPath) const;
