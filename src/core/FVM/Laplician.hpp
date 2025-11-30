@@ -13,7 +13,7 @@ namespace fvm
     void Laplician(
         SparseMatrix<Tp>& matrix,   // 稀疏矩阵
         const FaceField<Tp>& gamma,        // 扩散系数
-        Field<Tp>& phi              // 场值
+        Field<Tp>& phi              // 场值，此处非常量引用，需要将地址传入matrix，后续会进行修改
     );
 
 
@@ -77,6 +77,7 @@ namespace fvm
                 std::cerr << "Laplician() Error: The field of the input matrix is not the same as the field of the input fields parameters." << std::endl;
                 throw std::invalid_argument("The field of the input matrix is not the same as the field of the input fields parameters.");
             }
+            // 否则矩阵中的场与输入场一致，什么都不发生
         }
 
         using ULL = unsigned long long;
@@ -149,8 +150,8 @@ namespace fvm
             // 添加矩阵元素
             matrix(owner, owner) += coefficient_E;
             matrix(owner, neighbor) -= coefficient_E;
-            matrix(neighbor, neighbor) += coefficient_E;
-            matrix(neighbor, owner) -= coefficient_E;
+            matrix(neighbor, neighbor) += coefficient_E;    // 这里是+号！！！！！
+            matrix(neighbor, owner) -= coefficient_E;       // 这里是-号！！！！！
 
 
             // 考虑非正交修正，采用延迟修正
