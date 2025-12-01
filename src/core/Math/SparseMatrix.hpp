@@ -93,7 +93,7 @@ public:
     // 是否有效
     bool isValid() const;
 
-    friend void fvm::Laplician(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
+    friend void fvm::Laplician<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
 
 private:
 
