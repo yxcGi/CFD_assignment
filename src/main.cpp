@@ -115,13 +115,13 @@ int main()
         Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
         solver.init(phi.getCellField_0().getData());
-        solver.setParallel();
+        // solver.setParallel();
 
         // 计算求解时间
-        auto start = std::chrono::high_resolution_clock::now();
+        // auto start = std::chrono::high_resolution_clock::now();
         solver.solve();
-        auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+        // auto end = std::chrono::high_resolution_clock::now();
+        // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
         phi.writeToFile("phi.dat");
 
