@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-5
+3
 (
     movingWall
     {
@@ -23,26 +23,12 @@ FoamFile
         nFaces          20;
         startFace       760;
     }
-    leftWalls
+    fixedWalls
     {
         type            wall;
         inGroups        List<word> 1(wall);
-        nFaces          20;
+        nFaces          60;
         startFace       780;
-    }
-    rightWalls
-    {
-        type            wall;
-        inGroups        List < word> 1(wall);
-        nFaces          20;
-        startFace       800;
-    }
-    bottomWalls
-    {
-        type            wall;
-        inGroups        List < word> 1(wall);
-        nFaces          20;
-        startFace       820;
     }
     frontAndBack
     {
