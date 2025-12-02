@@ -87,7 +87,77 @@ int main()
     }
 #endif
 
+
+// 矢量求解测试
 #if 1
+    try
+    {
+        using Scalar = double;
+        // 读取网格
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+
+        // 创建标量场
+        Field<Vector<Scalar>> phi("U", &mesh);
+
+        phi.setValue(Vector<Scalar>(0, 0, 0));
+
+        // phi.setBoundaryCondition("movingWall", 1, 0, Vector<Scalar>(100, 0, 0));
+        // phi.setBoundaryCondition("leftWalls", 1, 0, Vector<Scalar>(0, 0, 0));
+        // phi.setBoundaryCondition("bottomWalls", 1, 0, Vector<Scalar>(0, 0, 0));
+        // phi.setBoundaryCondition("rightWalls", 1, 0, Vector<Scalar>(0, 0, 0));
+        phi.setBoundaryCondition("movingWall", 0, 1, Vector<Scalar>(0, 0, 0));
+        phi.setBoundaryCondition("leftWalls", 1, 0, Vector<Scalar>(100, 0, 0));
+        phi.setBoundaryCondition("bottomWalls", 1, 0, Vector<Scalar>(0, 0, 0));
+        phi.setBoundaryCondition("rightWalls", 0, 1, Vector<Scalar>(0, 0, 0));
+        phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
+
+        // 稀疏矩阵
+        SparseMatrix<Vector<Scalar>> A_b(&mesh);
+        FaceField<Scalar> gamma("gamma", &mesh);
+        gamma.setValue(20);
+        
+        // 创建稀疏矩阵
+        // 对于非第一类边界条件需要循环迭代才可求解
+        for (int i = 0; i < 1000; i++)
+        {
+            fvm::Laplician(A_b, gamma, phi);
+
+            Solver<Vector<Scalar>> solver(A_b, Solver<Vector<Scalar>>::Method::Jacobi, 100000);
+
+            solver.init(phi.getCellField_0().getData());
+            Scalar residual = solver.getResidual();
+            std::cout << "residual: " << residual << " " << i << std::endl;
+            if (residual < 1e-6)
+            {
+                break;
+            }
+
+            // solver.setParallel();
+
+            // 计算求解时间
+            // auto start = std::chrono::high_resolution_clock::now();
+            solver.solve();
+            // auto end = std::chrono::high_resolution_clock::now();
+            // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+            phi.cellToFace();
+            A_b.clear();
+
+        }
+
+        phi.writeToFile("phi.dat");
+
+        // getchar();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
+#endif 
+
+
+// 标量求解测试
+#if 0
     try
     {
         using Scalar = double;
@@ -98,7 +168,7 @@ int main()
         Field<Scalar> phi("T", &mesh);
 
         phi.setValue(500);
-        
+
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
         phi.setBoundaryCondition("leftWalls", 1, 0, 100);
         phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
@@ -108,16 +178,24 @@ int main()
         // 稀疏矩阵
         FaceField<Scalar> gamma("gamma", &mesh);
         gamma.setValue(20);
+        SparseMatrix<Scalar> A_b(&mesh);
 
+        // 创建稀疏矩阵
         // 对于非第一类边界条件需要循环迭代才可求解
-        for (int i = 0; i < 700; i++)
+        for (int i = 0; i < 1000; i++)
         {
-            SparseMatrix<Scalar> A_b(&mesh);
             fvm::Laplician(A_b, gamma, phi);
 
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
             solver.init(phi.getCellField_0().getData());
+            Scalar residual = solver.getResidual();
+            std::cout << "residual: " << residual << " " << i << std::endl;
+            if (residual < 1e-6)
+            {
+                break;
+            }
+
             // solver.setParallel();
 
             // 计算求解时间
@@ -126,10 +204,11 @@ int main()
             // auto end = std::chrono::high_resolution_clock::now();
             // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
             phi.cellToFace();
+            A_b.clear();
+
         }
 
         phi.writeToFile("phi.dat");
-
 
         // getchar();
     }

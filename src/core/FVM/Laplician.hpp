@@ -12,7 +12,7 @@ namespace fvm
     template<typename Tp>
     void Laplician(
         SparseMatrix<Tp>& matrix,   // 稀疏矩阵
-        const FaceField<Tp>& gamma,        // 扩散系数
+        const FaceField<Scalar>& gamma,        // 扩散系数
         Field<Tp>& phi              // 场值，此处非常量引用，需要将地址传入matrix，后续会进行修改
     );
 
@@ -21,7 +21,7 @@ namespace fvm
     template<typename Tp>
     void Laplician(
         SparseMatrix<Tp>& matrix,
-        const FaceField<Tp>& gamma,
+        const FaceField<Scalar>& gamma,
         Field<Tp>& phi
     )
     {

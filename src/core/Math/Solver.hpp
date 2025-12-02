@@ -10,7 +10,7 @@ template <typename Tp>
 class Solver
 {
     using ULL = unsigned long long;
-    static constexpr double DEFAULT_EPSILON = 1e-6;
+    static constexpr double DEFAULT_EPSILON = 1e-6; // 默认的精度
     static constexpr int DEFAULT_OUTPUT_INTERVAL = 20;
 public:
     // 求解方法
@@ -33,6 +33,8 @@ public:
     void init(const std::vector<Tp>& x0);
     void init(Tp value0);
     void init(const Field<Tp>& initField);
+    // 获取初始化后的残差
+    Scalar getResidual();
 
     // 并行
     void setParallel();
@@ -172,6 +174,52 @@ inline void Solver<Tp>::init(const Field<Tp>& initField)
     x_.resize(equation_.size());
     isInitialized_ = true;
 }
+
+template<typename Tp>
+inline Scalar Solver<Tp>::getResidual()
+{
+    ULL size = equation_.size();
+    const std::vector<Scalar>& values = equation_.getValues();
+    const std::vector<ULL>& rowPointer = equation_.getRowPointer();
+    const std::vector<ULL>& columnIndex = equation_.getColIndexs();
+    const std::vector<Tp>& b = equation_.getB();
+
+    Scalar maxResidual = 0;
+    if constexpr (std::is_same_v<Tp, Scalar>)
+    {
+        for (ULL i = 0; i < size; ++i)
+        {
+            Scalar residual{};
+            for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+            {
+                residual += values[colId] * x0_[columnIndex[colId]];
+            }
+            residual = std::abs(b[i] - residual);
+            maxResidual = std::max(maxResidual, residual);
+        }
+    }
+    else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+    {
+        for (ULL i = 0; i < size; ++i)
+        {
+            Vector<Scalar> residual{};
+            for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+            {
+                residual += values[colId] * x0_[columnIndex[colId]];
+            }
+            residual = residual - b[i];
+            maxResidual = std::max(maxResidual, residual.magnitude());
+        }
+    }
+    else
+    {
+        std::cerr << "Solver<Tp>::SerialSolve() Error: The type of Tp is not supported" << std::endl;
+        throw std::runtime_error("The type of Tp is not supported");
+    }
+    return maxResidual;
+}
+
+
 
 template<typename Tp>
 inline void Solver<Tp>::setParallel()
@@ -345,7 +393,7 @@ inline void Solver<Tp>::ParallelSolve()
                     filed_->getCellField().getData() = x_;
                     filed_->getCellField_0().getData() = x0_;
                 }
-                std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << "The solution has converged" << std::endl;
+                // std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << "The solution has converged" << std::endl;
 
                 // auto end = std::chrono::high_resolution_clock::now();
                 // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
@@ -393,10 +441,8 @@ inline void Solver<Tp>::SerialSolve()
 
     if (method_ == Solver::Method::Jacobi)
     {
-        // auto start = std::chrono::high_resolution_clock::now();
         for (int it = 0; it < maxIterationNum_; ++it)
         {
-        #pragma omp parallel for
             for (ULL i = 0; i < size; ++i)
             {
                 Tp sum{};
@@ -410,7 +456,7 @@ inline void Solver<Tp>::SerialSolve()
                 // 计算当前步解
                 x_[i] = (b[i] - sum) / diag[i];
             }
-            x0_ = x_;   // 更新x0_
+            // x0_ = x_;   // 更新x0_
 
             // 计算残差，采用最大残差
             Scalar maxResidual = 0;
@@ -446,17 +492,17 @@ inline void Solver<Tp>::SerialSolve()
                 throw std::runtime_error("The type of Tp is not supported");
             }
 
-            // 每N步输出一次
-            if ((it + 1) % outputInterval_ == 0 ||  // 保证后续输出的是整数次
-                it % outputInterval_ == 0)  // 第0次用
-            {
-                if (filed_)
-                {
-                    filed_->getCellField().getData() = x_;
-                    filed_->getCellField_0().getData() = x0_;
-                }
-                std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << std::endl;
-            }
+            // // 每N步输出一次
+            // if ((it + 1) % outputInterval_ == 0 ||  // 保证后续输出的是整数次
+            //     it % outputInterval_ == 0)  // 第0次用
+            // {
+            //     if (filed_)
+            //     {
+            //         filed_->getCellField().getData() = x_;
+            //         filed_->getCellField_0().getData() = x_;
+            //     }
+            //     std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << std::endl;
+            // }
 
 
 
@@ -468,18 +514,27 @@ inline void Solver<Tp>::SerialSolve()
             // }
             // std::cout << std::endl;
 
-            // 残差满足要求则返回
-            if (maxResidual < tolerance_)
+            // 残差满足要求或到最大迭代次数则返回，本次求解结束
+            if (maxResidual < tolerance_ ||
+                it == maxIterationNum_ - 1)
             {
                 if (filed_)
                 {
                     filed_->getCellField().getData() = x_;
-                    filed_->getCellField_0().getData() = x0_;
+                    filed_->getCellField_0().getData() = x_;
                 }
-                std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << " The solution has converged" << std::endl;
+                // std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << " The solution has converged" << std::endl;
 
-                // auto end = std::chrono::high_resolution_clock::now();
-                // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+                return;
+            }
+
+            // 更新x0_，如果松弛因子为1，则用移动语义赋值
+            if (std::abs(relaxationFactor_ - 1) < 1e-6)
+            {
+                x0_.swap(x_);
+            }
+            else    // 采用松弛加权处理, 挖坑
+            {
                 return;
             }
 
