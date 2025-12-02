@@ -390,8 +390,8 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
             const Face& face = faces[boundaryFaceIndex];
             ULL ownerIndex = face.getOwnerIndex();
             const Cell& ownerCell = cells[ownerIndex];
-            const Vector<Tp>& faceCenter = face.getCenter();
-            const Vector<Tp>& ownerCenter = ownerCell.getCenter();
+            const Vector<Scalar>& faceCenter = face.getCenter();
+            const Vector<Scalar>& ownerCenter = ownerCell.getCenter();
             const Vector<Scalar>& normal = face.getNormal();   // 面法向量
             Vector<Scalar> V_CB = faceCenter - ownerCenter;
 
@@ -407,7 +407,6 @@ inline void Field<Tp>::cellToFace(interpolation::Scheme scheme)
 
             // 计算c1, c2
             Scalar c1 = (b * E_magnitude) / (a * distance_CB + b * E_magnitude);
-            // auto c2 = (c - b * )    // 需要梯度计算，挖坑
             const decltype(Tp() * Vector<Scalar>())& cellGradient = cellGradientField_[ownerIndex];
             Tp c2 = (c - (b * cellGradient & T)) * distance_CB / (a * distance_CB + b * E_magnitude);
 
@@ -482,8 +481,8 @@ inline void Field<Tp>::setBoundaryCondition(const std::string& name, Scalar a, S
                 const Face& face = faces[boundaryFaceIndex];
                 ULL ownerIndex = face.getOwnerIndex();
                 const Cell& ownerCell = cells[ownerIndex];
-                const Vector<Tp>& faceCenter = face.getCenter();
-                const Vector<Tp>& ownerCenter = ownerCell.getCenter();
+                const Vector<Scalar>& faceCenter = face.getCenter();
+                const Vector<Scalar>& ownerCenter = ownerCell.getCenter();
                 const Vector<Scalar>& normal = face.getNormal();    // 面法向量
                 Vector<Scalar> V_CB = faceCenter - ownerCenter;
 

@@ -16,7 +16,7 @@ class SparseMatrix;
 namespace fvm
 {
     template<typename Tp>
-    void Laplician(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
+    void Laplician(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
 }
 
 
@@ -93,7 +93,10 @@ public:
     // 是否有效
     bool isValid() const;
 
-    friend void fvm::Laplician<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Tp>& gamma, Field<Tp>& phi);
+    // 给矩阵置零
+    void clear();
+
+    friend void fvm::Laplician<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
 
 private:
 
@@ -780,6 +783,33 @@ template<typename Tp>
 inline bool SparseMatrix<Tp>::isValid() const
 {
     return isValid_;
+}
+
+template<typename Tp>
+inline void SparseMatrix<Tp>::clear()
+{
+    if (!isValid_)
+    {
+        std::cerr << "SparseMatrix<Tp>::clear() Error: matrix is not valid" << std::endl;
+        throw std::runtime_error("matrix is not valid");
+    }
+
+    // 清空矩阵和右侧b向量
+    if (!isCompressed_) // 如果未压缩，则清空二维数组和向量
+    {
+        for (auto& row : unCompressedMatrix_)
+        {
+            std::fill(row.begin(), row.end(), Scalar{});
+        }
+        std::fill(b_.begin(), b_.end(), Tp{});
+        // isValid_ = false;
+    }
+    else
+    {
+        std::fill(values_.begin(), values_.end(), Scalar{});
+        std::fill(b_.begin(), b_.end(), Tp{});
+        // isValid_ = false;
+    }
 }
 
 
