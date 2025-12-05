@@ -220,7 +220,6 @@ inline void BaseField<Tp>::setValue(const std::function<Tp(Scalar, Scalar, Scala
         std::cerr << "Error: Field type is not set!" << std::endl;
         throw std::runtime_error("Field type is not set!");
     }
-   
 }
 
 template<typename Tp>

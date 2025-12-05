@@ -7,6 +7,7 @@
 #include "SparseMatrix.hpp"
 #include <cmath>
 #include "Solver.hpp"
+#include "Div.hpp"
 
 
 using Scalar = double;
@@ -88,8 +89,77 @@ int main()
 #endif
 
 
-// 矢量求解测试
+    // 对流项测试程序
 #if 1
+    try
+    {
+        using Scalar = double;
+        // 读取网格
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+
+        // 创建标量场
+        Field<Scalar> phi("T", &mesh);
+
+        phi.setValue(0);
+
+        phi.setBoundaryCondition("movingWall", 0, 1, 0);
+        phi.setBoundaryCondition("leftWalls", 1, 0, 100);
+        phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
+        phi.setBoundaryCondition("rightWalls" , 0, 1, 0);
+        phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
+
+        // 稀疏矩阵
+        FaceField<Scalar> rho("rho", &mesh);
+        rho.setValue(1);
+        FaceField<Vector<Scalar>> U("U", &mesh);
+        U.setValue(Vector<Scalar>(3, 1, 0));
+        SparseMatrix<Scalar> A_b(&mesh);
+
+        // 创建稀疏矩阵
+        // 对于非第一类边界条件需要循环迭代才可求解
+        for (int i = 0; i < 1000; i++)
+        {
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::FUD);;
+            // A_b.printMatrix();
+
+            // getchar();
+
+            Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
+
+            solver.init(phi.getCellField_0().getData());
+            Scalar residual = solver.getResidual();
+            std::cout << "residual: " << residual << " " << i << std::endl;
+            if (residual < 1e-6)
+            {
+                break;
+            }
+
+            // solver.setParallel();
+
+            // 计算求解时间
+            // auto start = std::chrono::high_resolution_clock::now();
+            solver.solve();
+            // auto end = std::chrono::high_resolution_clock::now();
+            // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+            phi.cellToFace();
+            A_b.clear();
+
+        }
+
+        phi.writeToFile("phi.dat");
+
+        // getchar();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
+#endif 
+
+
+    // 矢量求解测试
+#if 0
     try
     {
         using Scalar = double;
@@ -115,7 +185,7 @@ int main()
         SparseMatrix<Vector<Scalar>> A_b(&mesh);
         FaceField<Scalar> gamma("gamma", &mesh);
         gamma.setValue(20);
-        
+
         // 创建稀疏矩阵
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
@@ -156,7 +226,7 @@ int main()
 #endif 
 
 
-// 标量求解测试
+    // 方腔第二类边界条件测试
 #if 0
     try
     {
@@ -219,6 +289,69 @@ int main()
     }
 #endif 
 
+
+    // 方腔第一类边界条件测试
+#if 0
+    try
+    {
+        using Scalar = double;
+        // 读取网格
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+
+        // 创建标量场
+        Field<Scalar> phi("T", &mesh);
+
+        phi.setValue(500);
+
+        phi.setBoundaryCondition("movingWall", 1, 0, 100);
+        phi.setBoundaryCondition("leftWalls", 1, 0, 0);
+        phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
+        phi.setBoundaryCondition("rightWalls", 1, 0, 0);
+        phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
+
+        // 稀疏矩阵
+        FaceField<Scalar> gamma("gamma", &mesh);
+        gamma.setValue(20);
+        SparseMatrix<Scalar> A_b(&mesh);
+
+        // 创建稀疏矩阵
+        // 对于非第一类边界条件需要循环迭代才可求解
+        for (int i = 0; i < 1000; i++)
+        {
+            fvm::Laplician(A_b, gamma, phi);
+
+            Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
+
+            solver.init(phi.getCellField_0().getData());
+            Scalar residual = solver.getResidual();
+            std::cout << "residual: " << residual << " " << i << std::endl;
+            if (residual < 1e-6)
+            {
+                break;
+            }
+
+            // solver.setParallel();
+
+            // 计算求解时间
+            // auto start = std::chrono::high_resolution_clock::now();
+            solver.solve();
+            // auto end = std::chrono::high_resolution_clock::now();
+            // std::cout << "计算耗时：" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+            phi.cellToFace();
+            A_b.clear();
+
+        }
+
+        phi.writeToFile("phi.dat");
+
+        // getchar();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
+#endif 
 
 
 
