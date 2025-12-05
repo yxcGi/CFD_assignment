@@ -7,7 +7,7 @@
 #include "Mesh.h"
 #include <queue>
 #include "Field.hpp"
-
+#include "DivType.h"
 
 template <typename Tp>
 class SparseMatrix;
@@ -15,8 +15,18 @@ class SparseMatrix;
 // 前置友元函数声明
 namespace fvm
 {
+
     template<typename Tp>
     void Laplician(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
+
+    template <typename Tp>
+    void Div(
+        SparseMatrix<Tp>& matrix,
+        const FaceField<Scalar>& rho,
+        Field<Tp>& phi,
+        FaceField<Vector<Scalar>>& U,
+        DivType type = DivType::FUD
+    );
 }
 
 
@@ -96,7 +106,11 @@ public:
     // 给矩阵置零
     void clear();
 
+    // 给离散函数设置友元
     friend void fvm::Laplician<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
+
+    friend void fvm::Div(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& rho, Field<Tp>& phi, FaceField<Vector<Scalar>>& U, fvm::DivType type);
+
 
 private:
 

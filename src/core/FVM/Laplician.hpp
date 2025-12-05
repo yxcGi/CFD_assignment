@@ -8,7 +8,13 @@
 
 namespace fvm
 {
-
+    /**
+     * @brief 扩散项离散函数
+     * @tparam Tp 场类型
+     * @param matrix 待赋值矩阵
+     * @param gamma 广义扩散系数
+     * @param phi 待离散的场
+     */
     template<typename Tp>
     void Laplician(
         SparseMatrix<Tp>& matrix,   // 稀疏矩阵
@@ -58,8 +64,7 @@ namespace fvm
         }
         // 判断输出参数是否为同一网格
         if (mesh != gamma.getMesh() ||
-            mesh != phi.getMesh() ||
-            mesh != cellGradientField.getMesh())
+            mesh != phi.getMesh())
         {
             std::cerr << "Laplician() Error: The mesh of the input fields parameters is not the same as the mesh of the matrix." << std::endl;
             throw std::invalid_argument("The mesh of the input fields parameters is not the same as the mesh of the matrix.");
@@ -70,7 +75,7 @@ namespace fvm
         {
             matrix.fieldPtr_ = &phi;
         }
-        else
+        else    // 若已经被其他离散函数设置过
         {
             if (matrix.fieldPtr_ != &phi)
             {
