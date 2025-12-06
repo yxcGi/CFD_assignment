@@ -112,14 +112,14 @@ int main()
         FaceField<Scalar> rho("rho", &mesh);
         rho.setValue(1);
         FaceField<Vector<Scalar>> U("U", &mesh);
-        U.setValue(Vector<Scalar>(3, 1, 0));
+        U.setValue(Vector<Scalar>(1, 1, 0));
         SparseMatrix<Scalar> A_b(&mesh);
 
         // 创建稀疏矩阵
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Div(A_b, rho, phi, U, fvm::DivType::FUD);;
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);;
             // A_b.printMatrix();
 
             // getchar();
@@ -127,11 +127,13 @@ int main()
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
             solver.init(phi.getCellField_0().getData());
+            solver.setTolerance(1e-15);
+
             Scalar residual = solver.getResidual();
             std::cout << "residual: " << residual << " " << i << std::endl;
             if (residual < 1e-6)
             {
-                break;
+                // break;
             }
 
             // solver.setParallel();

@@ -90,10 +90,13 @@ namespace fvm
         // 获取必要参数
         using ULL = unsigned long long;
         using LL = long long;
-        const std::vector<Face> faces = mesh->getFaces();
+        using GradType = decltype(Tp()* Vector<Scalar>());
+        const std::vector<Face>& faces = mesh->getFaces();
+        const std::vector<Cell>& cells = mesh->getCells();
         const std::vector<ULL> internalFaceIndexes = mesh->getInternalFaceIndexes();
         const std::vector<ULL> boundaryFaceIndexes = mesh->getBoundaryFaceIndexes();
-        const FaceField<Tp>& phiFaceField = phi.getFaceField();
+        const FaceField<Tp>& phiFaceField = phi.getFaceField(); // 待离散场的面场
+        const CellField<GradType>& cellGradient = phi.getCellGradientField();
 
 
         // 先计算每个面的质量流量mf，之后phi要左乘mf
@@ -150,6 +153,63 @@ namespace fvm
                 }
             }
         }
+        else if (type == DivType::SUD)  // 二阶迎风
+        {
+            // 先遍历内部面
+            for (ULL faceId : internalFaceIndexes)
+            {
+                const Face& face = faces[faceId];
+                ULL owner = face.getOwnerIndex();
+                LL neighbor = face.getNeighborIndex();
+                Scalar m_f = mf[faceId];
+                Vector<Scalar> CD = cells[neighbor].getCenter() - cells[owner].getCenter();
+                GradType ownerGrad = cellGradient[owner];
+                GradType neighborGrad = cellGradient[neighbor];
+
+                if (m_f >= 0)
+                {
+                    matrix(owner, owner) += m_f * 1.5;
+                    matrix(owner, neighbor) -= m_f * 0.5;
+                    matrix.addB(owner, -m_f * (ownerGrad & CD));
+
+                    matrix(neighbor, neighbor) += m_f * 0.5;
+                    matrix(neighbor, owner) -= m_f * 1.5;
+                    matrix.addB(neighbor, m_f * (ownerGrad & CD));
+                }
+                else
+                {
+                    matrix(owner, owner) -= m_f * 0.5;
+                    matrix(owner, neighbor) += m_f * 1.5;
+                    matrix.addB(owner, m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
+
+                    matrix(neighbor, neighbor) += m_f * 1.5;
+                    matrix(neighbor, owner) -= m_f * 0.5;
+                    matrix.addB(neighbor, -m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
+                }
+            }
+
+            // 再遍历边界面
+            for (ULL faceId : boundaryFaceIndexes)
+            {
+                const Face& face = faces[faceId]; 
+                ULL owner = face.getOwnerIndex();
+                Scalar m_f = mf[faceId];
+                Vector<Scalar> Cf = face.getCenter() - cells[owner].getCenter();
+                GradType ownerGrad = cellGradient[owner];
+
+                if (m_f >= 0)
+                {
+                    // matrix(owner, owner) += m_f * 1.5;
+                    // matrix.addB(owner, m_f * (0.5 * phiFaceField[faceId] - 1.5 * (cellGradient[owner] & Cf)));
+                    matrix(owner, owner) += m_f * 1.5;
+                    matrix.addB(owner, m_f * (0.5 * phiFaceField[faceId] - 1.5 * (ownerGrad & Cf)));
+                }
+                else
+                {
+                    matrix.addB(owner, -m_f * phiFaceField[faceId]);
+                }
+            }
+        }
         else if (type == DivType::CD)   // 中心差分,等距结构化网格不可使用
         {
             const std::vector<Cell>& cells = mesh->getCells();
@@ -165,7 +225,7 @@ namespace fvm
                 std::cout << "m_f: " << m_f << "\n";
 
                 // assert(std::abs(m_f) > 1e-15); // 中心差分时，mf不应为0 测试用
-                
+
                 Scalar ownerDistance = (faceCenter - cells[owner].getCenter()).magnitude();
                 Scalar neighborDistance = (cells[neighbor].getCenter() - faceCenter).magnitude();
 
@@ -197,7 +257,7 @@ namespace fvm
         }
         else if (type == DivType::MINMOD)
         {
-            
+
         }
 
 

@@ -42,6 +42,9 @@ public:
     // 求解方程
     void solve();
 
+    // 设置容差
+    void setTolerance(Scalar tolerance);
+
     // 是否有效（初始化与否）
     bool isValid() const;
 
@@ -246,6 +249,17 @@ inline void Solver<Tp>::solve()
     }
 
 
+}
+
+template<typename Tp>
+inline void Solver<Tp>::setTolerance(Scalar tolerance)
+{
+    if (!isInitialized_)
+    {
+        std::cerr << "Solver<Tp>::setTolerance() Error: cannot set tolerance without initialization" << std::endl;
+        throw std::runtime_error("cannot set tolerance without initialization");
+    }
+    tolerance_ = tolerance;
 }
 
 template<typename Tp>
