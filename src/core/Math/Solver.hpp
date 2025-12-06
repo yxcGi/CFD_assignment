@@ -45,6 +45,9 @@ public:
     // 设置容差
     void setTolerance(Scalar tolerance);
 
+    // 亚松弛
+    void relax(Scalar alpha);
+
     // 是否有效（初始化与否）
     bool isValid() const;
 
@@ -58,7 +61,7 @@ private:
     SparseMatrix<Tp>& equation_;  // 方程矩阵（稀疏矩阵，压不压缩都行）
     std::vector<Tp> x0_;        // 上一步的解
     std::vector<Tp> x_;         // 本步的解
-    Scalar relaxationFactor_{ 1.0 };// 松弛因子
+    // Scalar relaxationFactor_{ 1.0 };// 松弛因子
     Method method_;             // 求解方法
     int maxIterationNum_;       // 最大迭代次数
     Scalar tolerance_;           // 残差
@@ -260,6 +263,40 @@ inline void Solver<Tp>::setTolerance(Scalar tolerance)
         throw std::runtime_error("cannot set tolerance without initialization");
     }
     tolerance_ = tolerance;
+}
+
+template<typename Tp>
+inline void Solver<Tp>::relax(Scalar alpha)
+{
+    if (!isInitialized_)
+    {
+        std::cerr << "Solver<Tp>::relax() Error: cannot relax without initialization" << std::endl;
+        throw std::runtime_error("cannot relax without initialization");
+    }
+
+    // 判断alpha是否在0-1之间
+    if (alpha <= 0 || alpha >= 1)
+    {
+        std::cerr << "Solver<Tp>::relax() Error: alpha must be in (0, 1)" << std::endl;
+        throw std::runtime_error("alpha must be in (0, 1)");
+    }
+
+
+
+    // 将方程对角线元素除以alpha
+    ULL size = equation_.size();
+    std::vector<Tp> diag(size);
+    for (ULL i = 0; i < size; ++i)
+    {
+        // 对角线记录的是已经除以alpha后的值
+        diag[i] = (equation_(i, i) /= alpha);
+    }
+
+    // 右端项
+    for (ULL i = 0; i < size; ++i)
+    {
+        equation_.addB(i, (1 - alpha) * diag[i] * x0_[i]);
+    }
 }
 
 template<typename Tp>
@@ -537,7 +574,7 @@ inline void Solver<Tp>::SerialSolve()
                     // filed_->getCellField().getData() = x_;
 
                     // 新值给cellField_0的，再与cellField交换
-                    filed_->getCellField_0().getData() = x_;
+                    filed_->getCellField_0().getData() = std::move(x_);
                     filed_->getCellField_0().getData().
                         swap(filed_->getCellField().getData());
                 }
@@ -546,16 +583,8 @@ inline void Solver<Tp>::SerialSolve()
                 return;
             }
 
-            // 更新x0_，如果松弛因子为1，则用移动语义赋值
-            if (std::abs(relaxationFactor_ - 1) < 1e-6)
-            {
-                x0_.swap(x_);
-            }
-            else    // 采用松弛加权处理, 挖坑
-            {
-                return;
-            }
-
+            // 更新x0_
+            x0_.swap(x_);
         }
     }
     else if (method_ == Solver::Method::GaussSeidel)
