@@ -96,7 +96,7 @@ namespace fvm
         const std::vector<ULL> internalFaceIndexes = mesh->getInternalFaceIndexes();
         const std::vector<ULL> boundaryFaceIndexes = mesh->getBoundaryFaceIndexes();
         const FaceField<Tp>& phiFaceField = phi.getFaceField(); // 待离散场的面场
-        const CellField<Tp>& phiCellField_0 = phi.getCellField();
+        const CellField<Tp>& phiCellField_0 = phi.getCellField();   // 获取本步场值
         const CellField<GradType>& cellGradient = phi.getCellGradientField();
 
 

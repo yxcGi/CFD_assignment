@@ -100,26 +100,34 @@ int main()
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
-        phi.setValue(499);
+        phi.setValue(0);
 
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
-        phi.setBoundaryCondition("leftWalls", 1, 0, 1000);
+        phi.setBoundaryCondition("leftWalls", 1, 0, 100);
         phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
-        phi.setBoundaryCondition("rightWalls" , 0, 1, 0);
+        phi.setBoundaryCondition("rightWalls", 0, 1, 0);
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
 
         // 稀疏矩阵
         FaceField<Scalar> rho("rho", &mesh);
         rho.setValue(1);
+
+
         FaceField<Vector<Scalar>> U("U", &mesh);
-        U.setValue(Vector<Scalar>(1, 1, 0));
+        U.setValue(
+            [](Scalar x, Scalar, Scalar) {
+                return Vector<Scalar>(10, 10 , 0);
+            }
+        );
+
+
         SparseMatrix<Scalar> A_b(&mesh);
 
         // 创建稀疏矩阵
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Div(A_b, rho, phi, U, fvm::DivType::FUD);;
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);;
             // A_b.printMatrix();
 
             // getchar();
@@ -128,6 +136,7 @@ int main()
 
             solver.init(phi.getCellField().getData());
             solver.setTolerance(1e-15);
+            solver.relax(0.5);
 
             Scalar residual = solver.getResidual();
             std::cout << "residual: " << residual << " " << i << std::endl;
@@ -224,7 +233,7 @@ int main()
     {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 1;
-    }
+}
 #endif 
 
 
@@ -395,4 +404,4 @@ int main()
     // cout << "v1 ⊗ v2 = " << dyad << endl;
 
     // return 0;
-}
+    }
