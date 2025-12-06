@@ -534,8 +534,12 @@ inline void Solver<Tp>::SerialSolve()
             {
                 if (filed_)
                 {
-                    filed_->getCellField().getData() = x_;
+                    // filed_->getCellField().getData() = x_;
+
+                    // 新值给cellField_0的，再与cellField交换
                     filed_->getCellField_0().getData() = x_;
+                    filed_->getCellField_0().getData().
+                        swap(filed_->getCellField().getData());
                 }
                 // std::cout << "Iteration " << it + 1 << ": Max Residual = " << maxResidual << " The solution has converged" << std::endl;
 

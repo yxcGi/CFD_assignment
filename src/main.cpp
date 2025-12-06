@@ -103,7 +103,7 @@ int main()
         phi.setValue(0);
 
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
-        phi.setBoundaryCondition("leftWalls", 1, 0, 100);
+        phi.setBoundaryCondition("leftWalls", 1, 0, 1);
         phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
         phi.setBoundaryCondition("rightWalls" , 0, 1, 0);
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
@@ -126,7 +126,7 @@ int main()
 
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
-            solver.init(phi.getCellField_0().getData());
+            solver.init(phi.getCellField().getData());
             solver.setTolerance(1e-15);
 
             Scalar residual = solver.getResidual();
