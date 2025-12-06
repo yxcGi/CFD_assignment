@@ -11,6 +11,7 @@ namespace fvm
     enum class DivType
     {
         FUD,    // 一阶迎风
+        SUD,    // 二阶迎风
         CD,     // 中心差分
         MINMOD,
         MUSCL
