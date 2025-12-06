@@ -100,10 +100,10 @@ int main()
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
-        phi.setValue(0);
+        phi.setValue(499);
 
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
-        phi.setBoundaryCondition("leftWalls", 1, 0, 1);
+        phi.setBoundaryCondition("leftWalls", 1, 0, 1000);
         phi.setBoundaryCondition("bottomWalls", 1, 0, 0);
         phi.setBoundaryCondition("rightWalls" , 0, 1, 0);
         phi.cellToFace();       // 若是第一步，只是将边界面的场根据边界条件进行更新
@@ -119,7 +119,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);;
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::FUD);;
             // A_b.printMatrix();
 
             // getchar();

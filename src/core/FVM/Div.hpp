@@ -96,6 +96,7 @@ namespace fvm
         const std::vector<ULL> internalFaceIndexes = mesh->getInternalFaceIndexes();
         const std::vector<ULL> boundaryFaceIndexes = mesh->getBoundaryFaceIndexes();
         const FaceField<Tp>& phiFaceField = phi.getFaceField(); // 待离散场的面场
+        const CellField<Tp>& phiCellField_0 = phi.getCellField();
         const CellField<GradType>& cellGradient = phi.getCellGradientField();
 
 
@@ -153,7 +154,7 @@ namespace fvm
                 }
             }
         }
-        else if (type == DivType::SUD)  // 二阶迎风
+        else if (type == DivType::SUD)  // 二阶迎风：一阶迎风+二阶延迟修正
         {
             // 先遍历内部面
             for (ULL faceId : internalFaceIndexes)
@@ -168,30 +169,48 @@ namespace fvm
 
                 if (m_f >= 0)
                 {
-                    matrix(owner, owner) += m_f * 1.5;
-                    matrix(owner, neighbor) -= m_f * 0.5;
-                    matrix.addB(owner, -m_f * (ownerGrad & CD));
+                    // matrix(owner, owner) += m_f * 1.5;
+                    // matrix(owner, neighbor) -= m_f * 0.5;
+                    // matrix.addB(owner, -m_f * (ownerGrad & CD));
 
-                    matrix(neighbor, neighbor) += m_f * 0.5;
-                    matrix(neighbor, owner) -= m_f * 1.5;
-                    matrix.addB(neighbor, m_f * (ownerGrad & CD));
+                    // matrix(neighbor, neighbor) += m_f * 0.5;
+                    // matrix(neighbor, owner) -= m_f * 1.5;
+                    // matrix.addB(neighbor, m_f * (ownerGrad & CD));
+
+                    // 一阶部分
+                    matrix(owner, owner) += m_f;
+                    matrix(neighbor, owner) -= m_f;
+
+                    // 二阶修正部分 (二阶 - 一阶)
+                    matrix.addB(owner, -m_f * 1.5 * phiCellField_0[owner] + m_f * 0.5 * phiCellField_0[neighbor] - m_f * (ownerGrad & CD) + m_f * phiCellField_0[owner]);
+
+                    matrix.addB(neighbor, -m_f * 0.5 * phiCellField_0[neighbor] + m_f * 1.5 * phiCellField_0[owner] + m_f * (ownerGrad & CD) - m_f * phiCellField_0[owner]);
                 }
                 else
                 {
-                    matrix(owner, owner) -= m_f * 0.5;
-                    matrix(owner, neighbor) += m_f * 1.5;
-                    matrix.addB(owner, m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
+                    // matrix(owner, owner) -= m_f * 0.5;
+                    // matrix(owner, neighbor) += m_f * 1.5;
+                    // matrix.addB(owner, m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
 
-                    matrix(neighbor, neighbor) += m_f * 1.5;
-                    matrix(neighbor, owner) -= m_f * 0.5;
-                    matrix.addB(neighbor, -m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
+                    // matrix(neighbor, neighbor) += m_f * 1.5;
+                    // matrix(neighbor, owner) -= m_f * 0.5;
+                    // matrix.addB(neighbor, -m_f * (neighborGrad & CD));  // 这里DC = -CD，省略了
+
+                    // 一阶部分
+                    matrix(owner, neighbor) += m_f;
+                    matrix(neighbor, neighbor) -= m_f;
+
+                    // 二阶修正部分
+                    matrix.addB(owner, +m_f * 0.5 * phiCellField_0[owner] - m_f * 1.5 * phiCellField_0[neighbor] + m_f * (neighborGrad & CD) + m_f * phiCellField_0[neighbor]);
+                    matrix.addB(neighbor, -m_f * 1.5 * phiCellField_0[neighbor] + m_f * 0.5 * phiCellField_0[owner] - m_f * (neighborGrad & CD) - m_f * phiCellField_0[neighbor]);
+
                 }
             }
 
             // 再遍历边界面
             for (ULL faceId : boundaryFaceIndexes)
             {
-                const Face& face = faces[faceId]; 
+                const Face& face = faces[faceId];
                 ULL owner = face.getOwnerIndex();
                 Scalar m_f = mf[faceId];
                 Vector<Scalar> Cf = face.getCenter() - cells[owner].getCenter();
@@ -200,9 +219,13 @@ namespace fvm
                 if (m_f >= 0)
                 {
                     // matrix(owner, owner) += m_f * 1.5;
-                    // matrix.addB(owner, m_f * (0.5 * phiFaceField[faceId] - 1.5 * (cellGradient[owner] & Cf)));
-                    matrix(owner, owner) += m_f * 1.5;
-                    matrix.addB(owner, m_f * (0.5 * phiFaceField[faceId] - 1.5 * (ownerGrad & Cf)));
+                    // matrix.addB(owner, m_f * (0.5 * phiFaceField[faceId] - 1.5 * (ownerGrad & Cf)));
+
+                    // 一阶部分
+                    matrix(owner, owner) += m_f;
+
+                    // 二阶部分
+                    // matrix.addB(owner, -m_f * 1.5 * phiCellField_0[owner] + m_f * (0.5 * phiFaceField[faceId] - 1.5 * (ownerGrad & Cf)) + m_f * phiCellField_0[owner]);
                 }
                 else
                 {
