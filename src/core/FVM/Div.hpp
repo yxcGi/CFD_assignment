@@ -216,6 +216,8 @@ namespace fvm
                 Vector<Scalar> Cf = face.getCenter() - cells[owner].getCenter();
                 GradType ownerGrad = cellGradient[owner];
 
+                // assert(Cf & face.getNormal() > 0);
+
                 if (m_f >= 0)
                 {
                     // matrix(owner, owner) += m_f * 1.5;

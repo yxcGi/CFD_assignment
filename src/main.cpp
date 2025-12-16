@@ -18,7 +18,7 @@ int main()
 #if 0
     try
     {
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
         SparseMatrix<Scalar> A_b(&mesh);
         A_b.setValue(0, 0, 99);
@@ -90,17 +90,28 @@ int main()
 
 
     // 对流项测试程序
-#if 1
+#if 0
     try
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
 
-        phi.setValue(0);
+        phi.setValue(
+            [](Scalar x, Scalar y, Scalar) {
+                if (y > x)
+                {
+                    return 100;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        );
 
         phi.setBoundaryCondition("movingWall", 0, 1, 0);
         phi.setBoundaryCondition("leftWalls", 1, 0, 100);
@@ -116,7 +127,7 @@ int main()
         FaceField<Vector<Scalar>> U("U", &mesh);
         U.setValue(
             [](Scalar x, Scalar, Scalar) {
-                return Vector<Scalar>(10, 10 , 0);
+                return Vector<Scalar>(10, 10, 0);
             }
         );
 
@@ -127,7 +138,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);;
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);
             // A_b.printMatrix();
 
             // getchar();
@@ -138,11 +149,11 @@ int main()
             solver.setTolerance(1e-15);
             solver.relax(0.5);
 
-            Scalar residual = solver.getResidual();
+            Scalar residual = solver.Error();
             std::cout << "residual: " << residual << " " << i << std::endl;
             if (residual < 1e-6)
             {
-                // break;
+                break;
             }
 
             // solver.setParallel();
@@ -170,12 +181,12 @@ int main()
 
 
     // 矢量求解测试
-#if 0
+#if 1
     try
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Vector<Scalar>> phi("U", &mesh);
@@ -206,7 +217,7 @@ int main()
             Solver<Vector<Scalar>> solver(A_b, Solver<Vector<Scalar>>::Method::Jacobi, 100000);
 
             solver.init(phi.getCellField_0().getData());
-            Scalar residual = solver.getResidual();
+            Scalar residual = solver.Error();
             std::cout << "residual: " << residual << " " << i << std::endl;
             if (residual < 1e-6)
             {
@@ -233,7 +244,7 @@ int main()
     {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 1;
-}
+    }
 #endif 
 
 
@@ -243,7 +254,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
@@ -270,7 +281,7 @@ int main()
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
             solver.init(phi.getCellField_0().getData());
-            Scalar residual = solver.getResidual();
+            Scalar residual = solver.Error();
             std::cout << "residual: " << residual << " " << i << std::endl;
             if (residual < 1e-6)
             {
@@ -307,7 +318,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_assignment/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
@@ -334,7 +345,7 @@ int main()
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
             solver.init(phi.getCellField_0().getData());
-            Scalar residual = solver.getResidual();
+            Scalar residual = solver.Error();
             std::cout << "residual: " << residual << " " << i << std::endl;
             if (residual < 1e-6)
             {
@@ -404,4 +415,4 @@ int main()
     // cout << "v1 ⊗ v2 = " << dyad << endl;
 
     // return 0;
-    }
+}
