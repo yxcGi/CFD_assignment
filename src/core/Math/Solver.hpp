@@ -33,8 +33,8 @@ public:
     void init(const std::vector<Tp>& x0);
     void init(Tp value0);
     void init(const Field<Tp>& initField);
-    // 获取初始化后的残差
-    Scalar getResidual();
+    // 获取初始化后的残差，判据：两次外迭代解的相对变化量
+    Scalar Error();
 
     // 并行
     void setParallel();
@@ -182,47 +182,92 @@ inline void Solver<Tp>::init(const Field<Tp>& initField)
 }
 
 template<typename Tp>
-inline Scalar Solver<Tp>::getResidual()
+inline Scalar Solver<Tp>::Error()
 {
-    ULL size = equation_.size();
-    const std::vector<Scalar>& values = equation_.getValues();
-    const std::vector<ULL>& rowPointer = equation_.getRowPointer();
-    const std::vector<ULL>& columnIndex = equation_.getColIndexs();
-    const std::vector<Tp>& b = equation_.getB();
+    // const std::vector<Scalar>& values = equation_.getValues();
+    // const std::vector<ULL>& rowPointer = equation_.getRowPointer();
+    // const std::vector<ULL>& columnIndex = equation_.getColIndexs();
+    // const std::vector<Tp>& b = equation_.getB();
 
-    Scalar maxResidual = 0;
-    if constexpr (std::is_same_v<Tp, Scalar>)
+    ULL size = equation_.size();
+    const Field<Tp>& phi = equation_.getField();
+
+    // 获取本步解和上一部解
+    const std::vector<Tp>& x = phi.getCellField().getData();    // 本步解
+    const std::vector<Tp>& x0 = phi.getCellField_0().getData(); // 上一部解
+
+    // 采用相对误差方式
+    if constexpr (std::is_same_v<Tp, Scalar>)   // 标量场
     {
+        Scalar temp1{};     // 分子
+        Scalar temp2{};     // 分母
+
         for (ULL i = 0; i < size; ++i)
         {
-            Scalar residual{};
-            for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
-            {
-                residual += values[colId] * x0_[columnIndex[colId]];
-            }
-            residual = std::abs(b[i] - residual);
-            maxResidual = std::max(maxResidual, residual);
+            temp1 += (x[i] - x0[i]) * (x[i] - x0[i]);
+            temp2 += x[i] * x[i];
         }
+
+        if (temp1 == 0) // 第一次直接返回最大值
+        {
+            return std::numeric_limits<Scalar>::max();
+        }
+
+        return std::sqrt(temp1 / (temp2 + 1e-30));
     }
-    else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+    else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)  // 矢量场用相减后的模长平方
     {
+        Scalar temp1{};
+        Scalar temp2{};
+
         for (ULL i = 0; i < size; ++i)
         {
-            Vector<Scalar> residual{};
-            for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
-            {
-                residual += values[colId] * x0_[columnIndex[colId]];
-            }
-            residual = residual - b[i];
-            maxResidual = std::max(maxResidual, residual.magnitude());
+            temp1 += (x[i] - x0[i]).magnitudeSquared();
+            temp2 += x[i].magnitudeSquared();
         }
+        
+        if (temp1 == 0) // 第一次直接返回最大值
+        {
+            return std::numeric_limits<Scalar>::max();
+        }
+
+        return std::sqrt(temp1 / (temp2 + 1e-30));
     }
-    else
-    {
-        std::cerr << "Solver<Tp>::SerialSolve() Error: The type of Tp is not supported" << std::endl;
-        throw std::runtime_error("The type of Tp is not supported");
-    }
-    return maxResidual;
+
+
+
+
+    // if constexpr (std::is_same_v<Tp, Scalar>)
+    // {
+    //     for (ULL i = 0; i < size; ++i)
+    //     {
+    //         Scalar residual{};
+    //         for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+    //         {
+    //             residual += values[colId] * x0_[columnIndex[colId]];
+    //         }
+    //         residual = std::abs(b[i] - residual);
+    //         maxResidual = std::max(maxResidual, residual);
+    //     }
+    // }
+    // else if constexpr (std::is_same_v<Tp, Vector<Scalar>>)
+    // {
+    //     for (ULL i = 0; i < size; ++i)
+    //     {
+    //         Vector<Scalar> residual{};
+    //         for (ULL colId = rowPointer[i]; colId < rowPointer[i + 1]; ++colId)
+    //         {
+    //             residual += values[colId] * x0_[columnIndex[colId]];
+    //         }
+    //         residual = residual - b[i];
+    //         maxResidual = std::max(maxResidual, residual.magnitude());
+    //     }
+    // }
+    // else
+    // {
+    //     std::cerr << "Solver<Tp>::SerialSolve() Error: The type of Tp is not supported" << std::endl;
+    //     throw std::runtime_error("The type of Tp is not supported");
+    // }
 }
 
 
