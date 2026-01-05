@@ -42,9 +42,6 @@ int main()
 #endif
 
 
-
-
-
 #if 0
     try
     {
@@ -138,7 +135,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Div(A_b, rho, phi, U, fvm::DivType::SUD);
+            fvm::Div(A_b, rho, phi, U, fvm::DivType::FUD);
             // A_b.printMatrix();
 
             // getchar();
@@ -181,7 +178,7 @@ int main()
 
 
     // 矢量求解测试
-#if 1
+#if 0
     try
     {
         using Scalar = double;
@@ -313,7 +310,7 @@ int main()
 
 
     // 方腔第一类边界条件测试
-#if 0
+#if 1
     try
     {
         using Scalar = double;
