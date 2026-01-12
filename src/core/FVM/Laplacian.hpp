@@ -16,7 +16,7 @@ namespace fvm
      * @param phi 待离散的场
      */
     template<typename Tp>
-    void Laplician(
+    void Laplacian(
         SparseMatrix<Tp>& matrix,   // 稀疏矩阵
         const FaceField<Scalar>& gamma,        // 扩散系数
         Field<Tp>& phi              // 场值，此处非常量引用，需要将地址传入matrix，后续会进行修改
@@ -25,7 +25,7 @@ namespace fvm
 
 #pragma region 函数实现
     template<typename Tp>
-    void Laplician(
+    void Laplacian(
         SparseMatrix<Tp>& matrix,
         const FaceField<Scalar>& gamma,
         Field<Tp>& phi
@@ -38,35 +38,35 @@ namespace fvm
         // 判断输入参数是否有效
         if (!matrix.isValid())
         {
-            std::cerr << "Laplician() Error: matrix is not valid." << std::endl;
+            std::cerr << "Laplacian() Error: matrix is not valid." << std::endl;
             throw std::invalid_argument("matrix is not valid.");
         }
         if (!gamma.isValid())
         {
-            std::cerr << "Laplician() Error: gamma is not valid." << std::endl;
+            std::cerr << "Laplacian() Error: gamma is not valid." << std::endl;
             throw std::invalid_argument("gamma is not valid.");
         }
         if (!phi.isValid())
         {
-            std::cerr << "Laplician() Error: phi is not valid." << std::endl;
+            std::cerr << "Laplacian() Error: phi is not valid." << std::endl;
             throw std::invalid_argument("phi is not valid.");
         }
         if (!cellGradientField.isValid())
         {
-            std::cerr << "Laplician() Error: gradientField is not valid." << std::endl;
+            std::cerr << "Laplacian() Error: gradientField is not valid." << std::endl;
             throw std::invalid_argument("gradientField is not valid.");
         }
         // 判断是否矩阵是否为空指针网格（稀疏矩阵只能由mesh构造）
         if (mesh == nullptr)
         {
-            std::cerr << "Laplician() Error: mesh is nullptr." << std::endl;
+            std::cerr << "Laplacian() Error: mesh is nullptr." << std::endl;
             throw std::invalid_argument("mesh is nullptr.");
         }
         // 判断输出参数是否为同一网格
         if (mesh != gamma.getMesh() ||
             mesh != phi.getMesh())
         {
-            std::cerr << "Laplician() Error: The mesh of the input fields parameters is not the same as the mesh of the matrix." << std::endl;
+            std::cerr << "Laplacian() Error: The mesh of the input fields parameters is not the same as the mesh of the matrix." << std::endl;
             throw std::invalid_argument("The mesh of the input fields parameters is not the same as the mesh of the matrix.");
         }
 
@@ -79,7 +79,7 @@ namespace fvm
         {
             if (matrix.fieldPtr_ != &phi)
             {
-                std::cerr << "Laplician() Error: The field of the input matrix is not the same as the field of the input fields parameters." << std::endl;
+                std::cerr << "Laplacian() Error: The field of the input matrix is not the same as the field of the input fields parameters." << std::endl;
                 throw std::invalid_argument("The field of the input matrix is not the same as the field of the input fields parameters.");
             }
             // 否则矩阵中的场与输入场一致，什么都不发生

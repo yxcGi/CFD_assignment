@@ -17,7 +17,7 @@ namespace fvm
 {
 
     template<typename Tp>
-    void Laplician(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
+    void Laplacian(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
 
     template <typename Tp>
     void Div(
@@ -107,7 +107,7 @@ public:
     void clear();
 
     // 给离散函数设置友元
-    friend void fvm::Laplician<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
+    friend void fvm::Laplacian<Tp>(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& gamma, Field<Tp>& phi);
 
     friend void fvm::Div(SparseMatrix<Tp>& matrix, const FaceField<Scalar>& rho, Field<Tp>& phi, FaceField<Vector<Scalar>>& U, fvm::DivType type);
 

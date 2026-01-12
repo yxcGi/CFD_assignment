@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Laplician.hpp"
+#include "Laplacian.hpp"
 #include "Vector.hpp"
 #include "Geometry/Mesh.h"
 #include "Tensor.hpp"
@@ -209,7 +209,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Laplician(A_b, gamma, phi);
+            fvm::Laplacian(A_b, gamma, phi);
 
             Solver<Vector<Scalar>> solver(A_b, Solver<Vector<Scalar>>::Method::Jacobi, 100000);
 
@@ -273,7 +273,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Laplician(A_b, gamma, phi);
+            fvm::Laplacian(A_b, gamma, phi);
 
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
@@ -337,7 +337,7 @@ int main()
         // 对于非第一类边界条件需要循环迭代才可求解
         for (int i = 0; i < 1000; i++)
         {
-            fvm::Laplician(A_b, gamma, phi);
+            fvm::Laplacian(A_b, gamma, phi);
 
             Solver<Scalar> solver(A_b, Solver<Scalar>::Method::Jacobi, 100000);
 
