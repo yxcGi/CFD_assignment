@@ -18,7 +18,7 @@ int main()
 #if 0
     try
     {
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
+        Mesh mesh("tempFile/OpenFOAM_tutorials/pitzDailySteady/constant/polyMesh");
 
         SparseMatrix<Scalar> A_b(&mesh);
         A_b.setValue(0, 0, 99);
@@ -92,7 +92,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
@@ -183,7 +183,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Vector<Scalar>> phi("U", &mesh);
@@ -251,7 +251,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
@@ -315,7 +315,7 @@ int main()
     {
         using Scalar = double;
         // 读取网格
-        Mesh mesh("/Users/yxc/Desktop/code/c++/CFD_FVM_Solver/tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
+        Mesh mesh("tempFile/OpenFOAM_tutorials/cavity/constant/polyMesh");
 
         // 创建标量场
         Field<Scalar> phi("T", &mesh);
