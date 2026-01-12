@@ -146,7 +146,7 @@ SparseMatrix<Scalar> A(&mesh);
 for (int i = 0; i < 1000; i++)
 {
     // 离散化：离散扩散项
-    fvm::Laplician(A, gamma, T);
+    fvm::Laplacian(A, gamma, T);
 
     // 求解线性方程组
     Solver<Scalar> solver(A, Solver<Scalar>::Method::Jacobi, 1000);
