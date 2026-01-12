@@ -49,7 +49,7 @@ src
 │   ├── FVM                             # 有限体积法离散算子（Discretization）
 │   │   ├── Div.hpp                     # 对流项（散度）离散函数
 │   │   ├── DivType.h                   # 对流项离散格式枚举（如一阶迎风、二阶迎风、中心差分等）
-│   │   └── Laplician.hpp               # 扩散项（拉普拉斯项）离散函数
+│   │   └── Laplacian.hpp               # 扩散项（拉普拉斯项）离散函数
 │   ├── Fields                          # 物理场数据结构与管理
 │   │   ├── BaseField.hpp               # 场类的基类（定义通用接口）
 │   │   ├── BoundaryCondition.hpp       # 边界条件类（处理第一、二、三类边界条件）
